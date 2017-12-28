@@ -1,0 +1,1 @@
+android rtmp player without ffmpeg
