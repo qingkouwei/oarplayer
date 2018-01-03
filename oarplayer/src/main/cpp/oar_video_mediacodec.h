@@ -1,9 +1,7 @@
-//
-// Created by gutou on 2017/4/24.
-//
 
-#ifndef __OAR_MEDIACODEC_H__
-#define __OAR_MEDIACODEC_H__
+
+#ifndef __OAR_VIDEO_MEDIACODEC_H__
+#define __OAR_VIDEO_MEDIACODEC_H__
 
 #include <string.h>
 #include <limits.h>
@@ -223,14 +221,14 @@ static void convert_h264_to_annexb( uint8_t *p_buf, size_t i_len,
     }
 }
 
-oar_mediacodec_context * oar_create_mediacodec_context(
-        oarplayer * oar);
-void oar_mediacodec_release_buffer(oarplayer * oar, OARFrame *frame);
-int oar_mediacodec_receive_frame(oarplayer * oar, OARFrame *frame);
-int oar_mediacodec_send_packet(oarplayer * oar, OARPacket * packet);
-void oar_mediacodec_flush(oarplayer * oar);
-void oar_mediacodec_release_context(oarplayer * oar);
-void oar_mediacodec_start(oarplayer * oar);
-void oar_mediacodec_stop(oarplayer * oar);
+oar_video_mediacodec_context * oar_create_video_mediacodec_context(
+        oarplayer *oar);
+void oar_video_mediacodec_release_buffer(oarplayer *oar, OARFrame *frame);
+int oar_video_mediacodec_receive_frame(oarplayer *oar, OARFrame *frame);
+int oar_video_mediacodec_send_packet(oarplayer *oar, OARPacket *packet);
+void oar_video_mediacodec_flush(oarplayer *oar);
+void oar_video_mediacodec_release_context(oarplayer *oar);
+void oar_video_mediacodec_start(oarplayer *oar);
+void oar_video_mediacodec_stop(oarplayer *oar);
 
-#endif //__OAR_MEDIACODEC_H__
+#endif //__OAR_VIDEO_MEDIACODEC_H__

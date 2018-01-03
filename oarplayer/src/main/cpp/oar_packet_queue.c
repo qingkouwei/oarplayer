@@ -1,6 +1,4 @@
-//
-// Created by 申俊伟 on 2017/12/18.
-//
+
 
 #include <malloc.h>
 #include <string.h>
@@ -76,17 +74,17 @@ int oar_packet_queue_put(oar_packet_queue *queue,
                          uint8_t *data){
     int64_t cachedDur = 0;
     pthread_mutex_lock(queue->mutex);
-    //LOGE("oar_packet_queue_put: %lld",queue->max_duration);
     if (queue->cachedPackets && queue->lastPacket) {
-        //LOGE("last:%lld, %p, cached:%lld, %p",queue->lastPacket->dts, queue->cachedPackets, queue->cachedPackets->dts, queue->lastPacket);
+        LOGE("type = %d;last:%lld, %p, cached:%lld, %p", type, queue->lastPacket->dts, queue->cachedPackets, queue->cachedPackets->dts, queue->lastPacket);
         cachedDur = queue->lastPacket->dts - queue->cachedPackets->dts;
-        //LOGE("duration:%lld" , cachedDur);
-        if (cachedDur >= queue->max_duration * 1000) {
+        LOGE("type = %d; duration:%lld" , type, cachedDur);
+        if (cachedDur >= queue->max_duration * USEC_PER_SEC) {
             if (queue->full_cb != NULL) {
                 queue->full_cb(queue->cb_data);
             }
-            LOGE("oar_packet_queue_put wait...");
+//            LOGE("type = %d; oar_packet_queue_put wait...", type);
             pthread_cond_wait(queue->cond, queue->mutex);
+//            LOGE("type = %d; oar_packet_queue_put wait end", type);
         }
     }
     pthread_mutex_unlock(queue->mutex);
@@ -112,21 +110,23 @@ int oar_packet_queue_put(oar_packet_queue *queue,
     }
     queue->count++;
     queue->total_bytes += size;
-    pthread_mutex_unlock(queue->mutex);
-
     pthread_cond_signal(queue->cond);
+    pthread_mutex_unlock(queue->mutex);
     return 0;
 }
 OARPacket*  oar_packet_queue_get(oar_packet_queue *queue){
+//    LOGI("oar_packet_queue_get start");
     pthread_mutex_lock(queue->mutex);
+//    LOGI("oar_packet_queue_get count: %d", queue->count);
     if (queue->count == 0) {
+        pthread_cond_signal(queue->cond);
         pthread_mutex_unlock(queue->mutex);
         if (queue->empty_cb != NULL) {
             queue->empty_cb(queue->cb_data);
         }
         return NULL;
     }
-    //LOGE("oar_packet_queue_get");
+//    LOGI("oar_packet_queue_get");
     OARPacket *ret = NULL;
     if (queue->cachedPackets) {
         ret = queue->cachedPackets;
@@ -139,6 +139,7 @@ OARPacket*  oar_packet_queue_get(oar_packet_queue *queue){
         }
     }
     else {
+        pthread_cond_signal(queue->cond);
         pthread_mutex_unlock(queue->mutex);
         if (queue->empty_cb != NULL) {
             queue->empty_cb(queue->cb_data);
@@ -146,6 +147,7 @@ OARPacket*  oar_packet_queue_get(oar_packet_queue *queue){
         return NULL;
     }
     queue->total_bytes -= ret->size;
+//    LOGE("type = %d,oar_packet_queue_get cond signal", ret->type);
     pthread_cond_signal(queue->cond);
     pthread_mutex_unlock(queue->mutex);
     return ret;

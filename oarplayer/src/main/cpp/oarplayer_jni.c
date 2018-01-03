@@ -19,7 +19,7 @@
  * invalid suffix on literal; C++11 requires a space between literal and identifier [-Wreserved-user-defined-literal]
  */
 
-#define JNI_CLASS_OARPLAYER     "com/wodekouwei/srsrtmpplayer/SrsPlayer"
+#define JNI_CLASS_OARPLAYER     "com/wodekouwei/srsrtmpplayer/OARPlayer"
 
 static oarplayer *oar;
 static int oar_run_android_version;

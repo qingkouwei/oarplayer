@@ -1,6 +1,4 @@
-//
-// Created by 申俊伟 on 2017/12/18.
-//
+
 
 #ifndef OARPLAYER_OAR_PLAYER_H
 #define OARPLAYER_OAR_PLAYER_H

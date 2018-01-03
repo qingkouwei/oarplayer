@@ -16,11 +16,11 @@ public class SurfaceTextureWrapper {
         texture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
             @Override
             public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-                Log.e(TAG, "onFrameAvailable....");
+//                Log.e(TAG, "onFrameAvailable....");
             }
         });
         surface = new Surface(texture);
-        HwDecodeWrapper.setOutputSurface(surface);
+        HwVideoDecodeWrapper.setOutputSurface(surface);
         return surface;
     }
 

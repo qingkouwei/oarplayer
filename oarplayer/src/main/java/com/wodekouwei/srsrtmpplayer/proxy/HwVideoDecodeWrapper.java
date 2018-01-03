@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class HwDecodeWrapper {
-    private final static String TAG = "HwDecodeWrapper";
+public class HwVideoDecodeWrapper {
+    private final static String TAG = "HwVideoDecodeWrapper";
     private static MediaCodec codec = null;
     private static MediaFormat format = null;
     private static Surface outputSurface = null;
@@ -81,7 +81,7 @@ public class HwDecodeWrapper {
     private static MediaCodec.BufferInfo output_buffer_info = new MediaCodec.BufferInfo();
     public static ByteBuffer dequeueOutputBufferIndex(long timeout){
         int id = codec.dequeueOutputBuffer(output_buffer_info, timeout);
-        Log.e(TAG, "dequeueOutputBuffer = " + id);
+        //Log.e(TAG, "dequeueOutputBuffer = " + id);
         bf.position(0);
         bf.putInt(id);
         if(id >= 0){
@@ -95,7 +95,7 @@ public class HwDecodeWrapper {
         try{
             codec.releaseOutputBuffer(id, true);
         }catch (Exception e){
-            System.out.println("catch exception when releaseOutPutBuffer  id==>" + id);
+            Log.e(TAG, "catch exception when releaseOutPutBuffer  id==>" + id);
             e.printStackTrace();
         }
 

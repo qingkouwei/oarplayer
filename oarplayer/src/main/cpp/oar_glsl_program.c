@@ -3,9 +3,11 @@
 #include <malloc.h>
 #include <string.h>
 #include "oar_glsl_program.h"
+#include "oar_texture.h"
+
 #define _JNILOG_TAG "glsl_program"
 #include "_android.h"
-#include "oar_texture.h"
+
 
 #define STR(s) #s
 
@@ -265,39 +267,6 @@ static const char * fs_yuv_420p = STR(
     }
 );
 
-static const char * vs_distortion = STR(
-    attribute vec2 aPosition;
-    attribute float aVignette;
-    attribute vec2 aRedTextureCoord;
-    attribute vec2 aGreenTextureCoord;
-    attribute vec2 aBlueTextureCoord;
-    varying vec2 vRedTextureCoord;
-    varying vec2 vBlueTextureCoord;
-    varying vec2 vGreenTextureCoord;
-    varying float vVignette;
-    uniform float uTextureCoordScale;
-    void main() {
-        gl_Position = vec4(aPosition, 0.0, 1.0);
-        vRedTextureCoord = aRedTextureCoord.xy * uTextureCoordScale;
-        vGreenTextureCoord = aGreenTextureCoord.xy * uTextureCoordScale;
-        vBlueTextureCoord = aBlueTextureCoord.xy * uTextureCoordScale;
-        vVignette = aVignette;
-    }
-);
-
-static const char * fs_distortion = STR(
-    precision mediump float;
-    varying vec2 vRedTextureCoord;
-    varying vec2 vBlueTextureCoord;
-    varying vec2 vGreenTextureCoord;
-    varying float vVignette;
-    uniform sampler2D uTextureSampler;
-    void main() {
-        gl_FragColor = vVignette * vec4(texture2D(uTextureSampler, vRedTextureCoord).r,
-                                        texture2D(uTextureSampler, vGreenTextureCoord).g,
-                                        texture2D(uTextureSampler, vBlueTextureCoord).b, 1.0);
-    }
-);
 
 static oar_glsl_program rect_nv12 = {
         .has_init = 0,

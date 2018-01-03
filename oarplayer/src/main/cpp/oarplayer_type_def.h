@@ -1,9 +1,6 @@
-//
-// Created by 申俊伟 on 2017/12/18.
-//
 
-#ifndef OARPLAYER_OARPLAYER_TYPE_DEF_H
-#define OARPLAYER_OARPLAYER_TYPE_DEF_H
+#ifndef __OARPLAYER_OARPLAYER_TYPE_DEF_H__
+#define __OARPLAYER_OARPLAYER_TYPE_DEF_H__
 
 #include <jni.h>
 #include <android/native_window_jni.h>
@@ -16,10 +13,6 @@
 #include <android/looper.h>
 
 #include "oar_macro.h"
-
-#if __ANDROID_API__ >= NDK_MEDIACODEC_VERSION
-#include <media/NdkMediaCodec.h>
-#endif
 
 struct oarplayer;
 typedef struct oar_java_class {
@@ -40,6 +33,19 @@ typedef struct oar_java_class {
     jmethodID codec_getOutputBuffer;
     jmethodID codec_releaseOutPutBuffer;
     jmethodID codec_release;
+
+    jclass HwAudioDecodeBridge;
+    jmethodID audio_codec_init;
+    jmethodID audio_codec_stop;
+    jmethodID audio_codec_flush;
+    jmethodID audio_codec_dequeueInputBuffer;
+    jmethodID audio_codec_queueInputBuffer;
+    jmethodID audio_codec_getInputBuffer;
+    jmethodID audio_codec_dequeueOutputBufferIndex;
+    jmethodID audio_codec_formatChange;
+    jmethodID audio_codec_getOutputBuffer;
+    jmethodID audio_codec_releaseOutPutBuffer;
+    jmethodID audio_codec_release;
 
     jclass SurfaceTextureBridge;
     jmethodID texture_getSurface;
@@ -212,14 +218,13 @@ typedef struct OARFrame {
     PktType_e type;
     int64_t dts;
     int64_t pts;
-    int isKeyframe;
     int format;
     int width;
     int height;
     int64_t pkt_pos;
     int sample_rate;
     struct OARFrame *next;
-//    uint8_t data[0];
+    uint8_t data[0];
 }OARFrame;
 typedef struct oar_frame_queue {
     pthread_mutex_t *mutex;
@@ -237,17 +242,44 @@ typedef enum {
     VIDEO_CODEC_Screenvideo2 = 6,
     VIDEO_CODEC_AVC = 7
 }VideoCodecID;
-typedef struct oar_mediacodec_context {
+typedef enum {
+    AUDIO_CODEC_LPCMPE = 0,//Linear PCM, platform endian
+    AUDIO_CODEC_ADPCM = 1, //ADPCM
+    AUDIO_CODEC_MP3 = 2,//MP3
+    AUDIO_CODEC_LPCMLE = 3, //Linear PCM, little endian
+    AUDIO_CODEC_AAC = 10
+}AudioCodecID;
+typedef struct oar_video_mediacodec_context {
     JNIEnv *jniEnv;
-#if __ANDROID_API__ >= NDK_MEDIACODEC_VERSION
-    AMediaCodec *codec;
-    AMediaFormat *format;
-#endif
     size_t nal_size;
     int width, height;
     OARPixelFormat pix_format;
     VideoCodecID codec_id;
-} oar_mediacodec_context;
+} oar_video_mediacodec_context;
+typedef struct oar_audio_mediacodec_context {
+    JNIEnv *jniEnv;
+    int channel_count;
+    int sample_rate;
+    AudioCodecID codec_id;
+} oar_audio_mediacodec_context;
+
+typedef struct oar_audio_player_context {
+    pthread_mutex_t *lock;
+    unsigned int play_pos;
+    int buffer_size;
+    uint8_t * buffer;
+    int frame_size;
+
+    void (*play)(struct oar_audio_player_context *pd);
+
+    void (*shutdown)();
+
+    void (*release)(struct oar_audio_player_context * ctx);
+
+    void (*player_create)(int rate, int channel, struct oarplayer *oar);
+
+    int64_t (*get_delta_time)(struct oar_audio_player_context * ctx);
+} oar_audio_player_context;
 
 typedef struct oarplayer {
     JavaVM *vm;
@@ -285,17 +317,14 @@ typedef struct oarplayer {
     // packet容器
     oar_packet_queue *video_packet_queue, *audio_packet_queue;
     // frame容器
-    //xl_frame_pool *audio_frame_pool;
-    //xl_frame_queue *audio_frame_queue;
+    oar_frame_queue *audio_frame_queue;
 
     oar_frame_queue *video_frame_queue;
 
     // 音频
-    //xl_audio_player_context *audio_player_ctx;
-    //xl_audio_filter_context *audio_filter_ctx;
-    //AVCodecContext *audio_codec_ctx;
-    //AVCodec *audio_codec;
-    //AVFrame *audio_frame;
+    oar_audio_player_context *audio_player_ctx;
+    OARFrame *audio_frame;
+    oar_audio_mediacodec_context *audio_mediacodec_ctx;
 
     // 软硬解公用
     oar_video_render_context *video_render_ctx;
@@ -305,7 +334,7 @@ typedef struct oarplayer {
     //软解视频
     //TODO
     // 硬解
-    oar_mediacodec_context *mediacodec_ctx;
+    oar_video_mediacodec_context *video_mediacodec_ctx;
 
     // 音视频同步
     oar_clock *video_clock;
@@ -347,4 +376,4 @@ typedef struct oarplayer {
 
 } oarplayer;
 
-#endif //OARPLAYER_OARPLAYER_TYPE_DEF_H
+#endif //__OARPLAYER_OARPLAYER_TYPE_DEF_H__

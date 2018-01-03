@@ -1,6 +1,4 @@
-//
-// Created by 申俊伟 on 2017/12/18.
-//
+
 
 #include <malloc.h>
 #include <unistd.h>
@@ -15,9 +13,12 @@
 #include "srs_readthread.h"
 #include "oar_video_render.h"
 #include "oar_player_video_hw_decode_thread.h"
-#include "oar_mediacodec.h"
+#include "oar_video_mediacodec.h"
 #include "oar_player_gl_thread.h"
 #include "oar_frame_queue.h"
+#include "oar_player_audio_hw_decode_thread.h"
+#include "oar_audio_player.h"
+#include "oar_audio_mediacodec.h"
 
 static int stop(oarplayer *oar);
 
@@ -86,15 +87,15 @@ static void reset(oarplayer *oar) {
     oar->video_index = -1;
     oar->audio_index = -1;
     oar->url = NULL;
-//    oar->audio_frame = NULL;
+    oar->audio_frame = NULL;
     oar->video_frame = NULL;
     oar->timeout_start = 0;
     oar_clock_reset(oar->audio_clock);
     oar_clock_reset(oar->video_clock);
     oar->error_code = 0;
     oar->frame_rotation = OAR_ROTATION_0;
-    //oar->change_status(pd, IDEL);
-    //oar_video_render_ctx_reset(pd->video_render_ctx);
+    oar->change_status(oar, IDEL);
+    oar_video_render_ctx_reset(oar->video_render_ctx);
 }
 
 static inline void set_buffer_time(oarplayer *pd) {
@@ -138,10 +139,11 @@ oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int be
     oar->audio_packet_queue = oar_queue_create();
     oar->video_packet_queue = oar_queue_create();
     oar->video_frame_queue = oar_frame_queue_create(20);
-    //oar->audio_frame_queue = oar_frame_queue_create();
+    oar->audio_frame_queue = oar_frame_queue_create(20);
     oar->audio_clock = oar_clock_create();
     oar->video_clock = oar_clock_create();
     oar->video_render_ctx = oar_video_render_ctx_create();
+    oar->audio_player_ctx = oar_audio_engine_create();
 
     oar->main_looper = ALooper_forThread();
     pipe(oar->pipe_fd);
@@ -207,7 +209,7 @@ static int stop(oarplayer *oar) {
         if (oar->is_sw_decode) {
             //avcodec_free_context(&pd->video_codec_ctx);
         } else {
-            //oar_mediacodec_release_context(pd);
+            oar_video_mediacodec_release_context(oar);
         }
         pthread_join(oar->gl_thread, &thread_res);
     }
@@ -237,14 +239,14 @@ int oar_player_release(oarplayer *oar){
     ALooper_removeFd(oar->main_looper, oar->pipe_fd[0]);
     close(oar->pipe_fd[1]);
     close(oar->pipe_fd[0]);
-    //oar_frame_queue_free(oar->audio_frame_queue);
+    oar_frame_queue_free(oar->audio_frame_queue);
     oar_frame_queue_free(oar->video_frame_queue);
     oar_packet_queue_free(oar->audio_packet_queue);
     oar_packet_queue_free(oar->video_packet_queue);
     oar_clock_free(oar->audio_clock);
     oar_clock_free(oar->video_clock);
     oar_video_render_ctx_release(oar->video_render_ctx);
-    //oar->audio_player_ctx->release(oar->audio_player_ctx);
+    oar->audio_player_ctx->release(oar->audio_player_ctx);
 
     if(oar->metadata){
         if(oar->metadata->audio_pps){
@@ -278,7 +280,15 @@ static void on_error(oarplayer *pd) {
                                   pd->error_code);
 }
 static int hw_codec_init(oarplayer *oar) {
-    oar->mediacodec_ctx = oar_create_mediacodec_context(oar);
+    oar->video_mediacodec_ctx = oar_create_video_mediacodec_context(oar);
+    return 0;
+}
+static int audio_codec_init(oarplayer *oar) {
+
+    oar->audio_mediacodec_ctx = oar_create_audio_mediacodec_context(oar);
+    // Android openSL ES   can not support more than 2 channels.
+    // flv acc sample_rate is constant 3(44100)
+    oar->audio_player_ctx->player_create(oar->metadata->sample_rate, oar->metadata->channels, oar);
     return 0;
 }
 static void on_decoder_configuration(oarplayer *oar){
@@ -288,24 +298,25 @@ static void on_decoder_configuration(oarplayer *oar){
     set_buffer_time(oar);
     int ret;
     /*if (oar->is_sw_decode) {
-        ret = sw_codec_init(pd);
+        ret = sw_codec_init(oar);
     } else {*/
         ret = hw_codec_init(oar);
 //    }
     if (ret != 0) {
         LOGE("video decoder failed");
     }
+    audio_codec_init(oar);
 
     if (oar->metadata->has_video) {
         /*if (oar->is_sw_decode) {
-            pthread_create(&oar->video_decode_thread, NULL, video_decode_sw_thread, pd);
+            pthread_create(&oar->video_decode_thread, NULL, video_decode_sw_thread, oar);
         } else {*/
             pthread_create(&oar->video_decode_thread, NULL, video_decode_hw_thread, oar);
 //        }
         pthread_create(&oar->gl_thread, NULL, oar_player_gl_thread, oar);
     }
-    /*if (oar->metadata->has_audio) {
+    if (oar->metadata->has_audio) {
         pthread_create(&oar->audio_decode_thread, NULL, audio_decode_thread, oar);
-    }*/
+    }
     oar->change_status(oar, PLAYING);
 }

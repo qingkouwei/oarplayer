@@ -1,6 +1,3 @@
-//
-// Created by gutou on 2017/5/8.
-//
 
 #include <pthread.h>
 #include <malloc.h>
@@ -64,9 +61,13 @@ void oar_frame_queue_free(oar_frame_queue *queue){
 }
 
 int oar_frame_queue_put(oar_frame_queue *queue, OARFrame *f){
-    LOGE("start oar_frame_queue_put:%d", queue->count);
+    //LOGE("start oar_frame_queue_put:%d", queue->count);
     pthread_mutex_lock(queue->mutex);
     while(queue->count == queue->size){
+        if(f->type == PktType_Audio){
+            LOGE("frame queue wait...");
+        }
+
         pthread_cond_wait(queue->cond, queue->mutex);
     }
     if (queue->lastFrame) {
@@ -77,13 +78,13 @@ int oar_frame_queue_put(oar_frame_queue *queue, OARFrame *f){
         queue->lastFrame = queue->cachedFrames = f;
     }
     queue->count++;
-    LOGE("oar_frame_queue_put:%d", queue->count);
+    //LOGE("oar_frame_queue_put:%d", queue->count);
     pthread_mutex_unlock(queue->mutex);
     return 0;
 }
 
 OARFrame *  oar_frame_queue_get(oar_frame_queue *queue){
-    LOGE("start oar_frame_queue_get:%d", queue->count);
+    //LOGE("start oar_frame_queue_get:%d", queue->count);
     pthread_mutex_lock(queue->mutex);
     if (queue->count == 0) {
         pthread_mutex_unlock(queue->mutex);
@@ -106,7 +107,7 @@ OARFrame *  oar_frame_queue_get(oar_frame_queue *queue){
     }
     pthread_cond_signal(queue->cond);
     pthread_mutex_unlock(queue->mutex);
-    LOGE("pts=%lld", ret->pts);
+//    LOGI("pts=%lld", ret->pts);
     return ret;
 }
 

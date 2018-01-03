@@ -1,6 +1,3 @@
-//
-// Created by gutou on 2017/5/24.
-//
 
 #include <pthread.h>
 #include <malloc.h>

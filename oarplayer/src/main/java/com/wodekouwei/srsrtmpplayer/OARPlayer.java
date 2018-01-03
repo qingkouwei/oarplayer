@@ -10,8 +10,8 @@ import java.io.IOException;
  * Created by shenjunwei on 2017/12/15.
  */
 
-public class SrsPlayer {
-    private final static String TAG = SrsPlayer.class.getName();
+public class OARPlayer {
+    private final static String TAG = OARPlayer.class.getName();
 
     private PowerManager.WakeLock mWakeLock = null;
     private boolean mScreenOnWhilePlaying;
@@ -21,7 +21,7 @@ public class SrsPlayer {
 
     private static volatile boolean mIsNativeInitialized = false;
     private static void initNativeOnce() {
-        synchronized (SrsPlayer.class) {
+        synchronized (OARPlayer.class) {
             if (!mIsNativeInitialized) {
                 native_init(Build.VERSION.SDK_INT, 44100);
                 mIsNativeInitialized = true;
@@ -29,7 +29,7 @@ public class SrsPlayer {
         }
     }
 
-    public SrsPlayer() {
+    public OARPlayer() {
         initPlayer();
     }
     private void initPlayer() {
@@ -49,7 +49,7 @@ public class SrsPlayer {
          * Native setup requires a weak reference to our object. It's easier to
          * create it here than in C++.
          */
-//        native_setup(new WeakReference<SrsPlayer>(this));
+//        native_setup(new WeakReference<OARPlayer>(this));
     }
     private static native void native_init(int run_android_version, int best_samplerate);
 

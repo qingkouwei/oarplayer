@@ -1,18 +1,17 @@
-//
-// Created by gutou on 2017/4/24.
-//
+
 
 #include <unistd.h>
 #include <malloc.h>
-#include "oar_mediacodec.h"
+#include "oar_video_mediacodec.h"
 #include "oarplayer_type_def.h"
-#define _JNILOG_TAG "mediacodec"
+#define _JNILOG_TAG "videomediacodec"
 #include "_android.h"
+#include "util.h"
 
 /*#if __ANDROID_API__ >= NDK_MEDIACODEC_VERSION
 
-int oar_mediacodec_send_packet(oarplayer * oar, OARPacket *packet) {
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+int oar_video_mediacodec_send_packet(oarplayer * oar, OARPacket *packet) {
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     if (packet == NULL) { return -2; }
     uint32_t keyframe_flag = 0;
 //    av_packet_split_side_data(packet);
@@ -43,12 +42,12 @@ int oar_mediacodec_send_packet(oarplayer * oar, OARPacket *packet) {
     return 0;
 }
 
-void oar_mediacodec_release_buffer(oarplayer * oar, OARFrame *frame) {
-    AMediaCodec_releaseOutputBuffer(oar->mediacodec_ctx->codec, (size_t) frame->HW_BUFFER_ID, true);
+void oar_video_mediacodec_release_buffer(oarplayer * oar, OARFrame *frame) {
+    AMediaCodec_releaseOutputBuffer(oar->video_mediacodec_ctx->codec, (size_t) frame->HW_BUFFER_ID, true);
 }
 
-int oar_mediacodec_receive_frame(oarplayer * oar, OARFrame *frame) {
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+int oar_video_mediacodec_receive_frame(oarplayer * oar, OARFrame *frame) {
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     AMediaCodecBufferInfo info;
     int output_ret = 1;
     ssize_t outbufidx = AMediaCodec_dequeueOutputBuffer(ctx->codec, &info, 0);
@@ -93,13 +92,13 @@ int oar_mediacodec_receive_frame(oarplayer * oar, OARFrame *frame) {
     return output_ret;
 }
 
-void oar_mediacodec_flush(oarplayer * oar) {
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+void oar_video_mediacodec_flush(oarplayer * oar) {
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     AMediaCodec_flush(ctx->codec);
 }
 
-oar_mediacodec_context *oar_create_mediacodec_context(oarplayer * oar) {
-    oar_mediacodec_context *ctx = (oar_mediacodec_context *) malloc(sizeof(oar_mediacodec_context));
+oar_video_mediacodec_context *oar_create_video_mediacodec_context(oarplayer * oar) {
+    oar_video_mediacodec_context *ctx = (oar_video_mediacodec_context *) malloc(sizeof(oar_video_mediacodec_context));
     ctx->width = oar->metadata->width;
     ctx->height = oar->metadata->height;
     ctx->codec_id = oar->metadata->video_codec;
@@ -136,8 +135,8 @@ oar_mediacodec_context *oar_create_mediacodec_context(oarplayer * oar) {
     return ctx;
 }
 
-void oar_mediacodec_start(oarplayer * oar){
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+void oar_video_mediacodec_start(oarplayer * oar){
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     while(oar->video_render_ctx->texture_window == NULL){
         usleep(10000);
     }
@@ -151,38 +150,22 @@ void oar_mediacodec_start(oarplayer * oar){
     }
 }
 
-void oar_mediacodec_stop(oarplayer * oar){
-    AMediaCodec_stop(oar->mediacodec_ctx->codec);
+void oar_video_mediacodec_stop(oarplayer * oar){
+    AMediaCodec_stop(oar->video_mediacodec_ctx->codec);
 }
 
-void oar_mediacodec_release_context(oarplayer * oar){
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+void oar_video_mediacodec_release_context(oarplayer * oar){
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     AMediaCodec_delete(ctx->codec);
     AMediaFormat_delete(ctx->format);
     free(ctx);
-    oar->mediacodec_ctx = NULL;
+    oar->video_mediacodec_ctx = NULL;
 }
 #else*/
 
-
-static int get_int(uint8_t *buf) {
-    return (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
-}
-
-static int64_t get_long(uint8_t *buf) {
-    return (((int64_t) buf[0]) << 56)
-           + (((int64_t) buf[1]) << 48)
-           + (((int64_t) buf[2]) << 40)
-           + (((int64_t) buf[3]) << 32)
-           + (((int64_t) buf[4]) << 24)
-           + (((int64_t) buf[5]) << 16)
-           + (((int64_t) buf[6]) << 8)
-           + ((int64_t) buf[7]);
-}
-
-oar_mediacodec_context *oar_create_mediacodec_context(
+oar_video_mediacodec_context *oar_create_video_mediacodec_context(
         oarplayer *oar) {
-    oar_mediacodec_context *ctx = (oar_mediacodec_context *) malloc(sizeof(oar_mediacodec_context));
+    oar_video_mediacodec_context *ctx = (oar_video_mediacodec_context *) malloc(sizeof(oar_video_mediacodec_context));
     ctx->width = oar->metadata->width;
     ctx->height = oar->metadata->height;
     ctx->codec_id = oar->metadata->video_codec;
@@ -191,9 +174,9 @@ oar_mediacodec_context *oar_create_mediacodec_context(
     return ctx;
 }
 
-void oar_mediacodec_start(oarplayer *oar){
-    LOGE("oar_mediacodec_start...");
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+void oar_video_mediacodec_start(oarplayer *oar){
+    LOGE("oar_video_mediacodec_start...");
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     JNIEnv *jniEnv = ctx->jniEnv;
     oar_java_class * jc = oar->jc;
     jobject codecName = NULL, csd_0 = NULL, csd_1 = NULL;
@@ -244,17 +227,17 @@ void oar_mediacodec_start(oarplayer *oar){
     }
 }
 
-void oar_mediacodec_release_buffer(oarplayer *pd, OARFrame *frame) {
+void oar_video_mediacodec_release_buffer(oarplayer *pd, OARFrame *frame) {
     JNIEnv *jniEnv = pd->video_render_ctx->jniEnv;
     oar_java_class * jc = pd->jc;
     (*jniEnv)->CallStaticVoidMethod(jniEnv, jc->HwDecodeBridge, jc->codec_releaseOutPutBuffer,
                                     (int)frame->HW_BUFFER_ID);
 }
 
-int oar_mediacodec_receive_frame(oarplayer *oar, OARFrame *frame) {
-    JNIEnv *jniEnv = oar->mediacodec_ctx->jniEnv;
+int oar_video_mediacodec_receive_frame(oarplayer *oar, OARFrame *frame) {
+    JNIEnv *jniEnv = oar->video_mediacodec_ctx->jniEnv;
     oar_java_class * jc = oar->jc;
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     int output_ret = 1;
     jobject deqret = (*jniEnv)->CallStaticObjectMethod(jniEnv, jc->HwDecodeBridge,
                                                        jc->codec_dequeueOutputBufferIndex,
@@ -263,8 +246,9 @@ int oar_mediacodec_receive_frame(oarplayer *oar, OARFrame *frame) {
     int outbufidx = get_int(retbuf);
     int64_t pts = get_long(retbuf + 8);
     (*jniEnv)->DeleteLocalRef(jniEnv, deqret);
-//    LOGE("outbufidx:%d" , outbufidx);
+    LOGE("oar_video_mediacodec_receive_frame outbufidx:%d" , outbufidx);
     if (outbufidx >= 0) {
+        frame->type = PktType_Video;
         frame->pts = pts;
         frame->format = PIX_FMT_EGL_EXT;
         frame->width = oar->metadata->width;
@@ -312,10 +296,10 @@ int oar_mediacodec_receive_frame(oarplayer *oar, OARFrame *frame) {
     return output_ret;
 }
 
-int oar_mediacodec_send_packet(oarplayer *oar, OARPacket *packet) {
-    JNIEnv *jniEnv = oar->mediacodec_ctx->jniEnv;
+int oar_video_mediacodec_send_packet(oarplayer *oar, OARPacket *packet) {
+    JNIEnv *jniEnv = oar->video_mediacodec_ctx->jniEnv;
     oar_java_class * jc = oar->jc;
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     if (packet == NULL) { return -2; }
     int keyframe_flag = 0;
     int64_t time_stamp = packet->pts;
@@ -343,6 +327,7 @@ int oar_mediacodec_send_packet(oarplayer *oar, OARPacket *packet) {
         }
         (*jniEnv)->DeleteLocalRef(jniEnv, inputBuffer);
     } else if (id == -1) {
+        LOGE("dequeue inputbuffer is -1");
         return -1;
     } else {
         LOGE("input buffer id < 0  value == %zd", id);
@@ -350,23 +335,23 @@ int oar_mediacodec_send_packet(oarplayer *oar, OARPacket *packet) {
     return 0;
 }
 
-void oar_mediacodec_flush(oarplayer *oar) {
-    JNIEnv *jniEnv = oar->mediacodec_ctx->jniEnv;
+void oar_video_mediacodec_flush(oarplayer *oar) {
+    JNIEnv *jniEnv = oar->video_mediacodec_ctx->jniEnv;
     oar_java_class * jc = oar->jc;
     (*jniEnv)->CallStaticVoidMethod(jniEnv, jc->HwDecodeBridge, jc->codec_flush);
 }
 
-void oar_mediacodec_release_context(oarplayer *oar) {
+void oar_video_mediacodec_release_context(oarplayer *oar) {
     JNIEnv *jniEnv = oar->jniEnv;
     oar_java_class * jc = oar->jc;
     (*jniEnv)->CallStaticVoidMethod(jniEnv, jc->HwDecodeBridge, jc->codec_release);
-    oar_mediacodec_context *ctx = oar->mediacodec_ctx;
+    oar_video_mediacodec_context *ctx = oar->video_mediacodec_ctx;
     free(ctx);
-    oar->mediacodec_ctx = NULL;
+    oar->video_mediacodec_ctx = NULL;
 }
 
-void oar_mediacodec_stop(oarplayer *oar) {
-    JNIEnv *jniEnv = oar->mediacodec_ctx->jniEnv;
+void oar_video_mediacodec_stop(oarplayer *oar) {
+    JNIEnv *jniEnv = oar->video_mediacodec_ctx->jniEnv;
     oar_java_class * jc = oar->jc;
     (*jniEnv)->CallStaticVoidMethod(jniEnv, jc->HwDecodeBridge, jc->codec_stop);
 }

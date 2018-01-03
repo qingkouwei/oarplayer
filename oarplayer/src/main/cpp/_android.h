@@ -1,9 +1,3 @@
-/*
- * android_log.h
- *
- *  Created on: 2014-6-30
- *      Author: ken
- */
 
 #ifndef _ANDROID_H_
 #define _ANDROID_H_

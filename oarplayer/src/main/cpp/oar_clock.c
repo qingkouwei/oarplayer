@@ -1,6 +1,4 @@
-//
-// Created by 申俊伟 on 2017/12/18.
-//
+
 
 #include <sys/time.h>
 #include <malloc.h>

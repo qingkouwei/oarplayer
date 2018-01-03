@@ -9,14 +9,6 @@ cmake_minimum_required(VERSION 3.4.1)
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
-add_library( # Sets the name of the library.
-             srslibrtmp-lib
-
-             # Sets the library as a shared library.
-             SHARED
-
-             # Provides a relative path to your source file(s).
-             src/main/cpp/srs_librtmp.cpp )
 
 add_library( # Sets the name of the library.
              oarp-lib
@@ -34,19 +26,18 @@ add_library( # Sets the name of the library.
              src/main/cpp/oar_frame_queue.c
              src/main/cpp/oar_player.c
              src/main/cpp/oar_jni_reflect.c
-             src/main/cpp/oar_mediacodec.c
+             src/main/cpp/oar_video_mediacodec.c
+             src/main/cpp/oar_audio_mediacodec.c
              src/main/cpp/oar_player_video_hw_decode_thread.c
+             src/main/cpp/oar_player_audio_hw_decode_thread.c
              src/main/cpp/oar_video_render.c
              src/main/cpp/oar_texture.c
              src/main/cpp/oar_glsl_program.c
              src/main/cpp/oar_player_gl_thread.c
+             src/main/cpp/oar_audio_player.c
+             src/main/cpp/util.c
              )
 
-# Searches for a specified prebuilt library and stores the path as a
-# variable. Because CMake includes system libraries in the search path by
-# default, you only need to specify the name of the public NDK library
-# you want to add. CMake verifies that the library exists before
-# completing its build.
 
 find_library( # Sets the name of the path variable.
               log-lib
@@ -58,16 +49,8 @@ find_library(android-lib
             android)
 find_library(glesv2-lib GLESv2)
 find_library(egl-lib EGL)
-# Specifies libraries CMake should link to your target library. You
-# can link multiple libraries, such as libraries you define in this
-# build script, prebuilt third-party libraries, or system libraries.
-target_link_libraries( # Specifies the target library.
-                       srslibrtmp-lib
+find_library(sles-lib OpenSLES)
 
-                       # Links the target library to the log library
-                       # included in the NDK.
-                       ${log-lib}
-                       )
 if (${CMAKE_SYSTEM_VERSION} MATCHES "21")
     find_library(media-ndk mediandk)
     target_link_libraries( # Specifies the target library.
@@ -79,8 +62,8 @@ if (${CMAKE_SYSTEM_VERSION} MATCHES "21")
                        ${android-lib}
                        ${egl-lib}
                        ${glesv2-lib}
+                       ${sles-lib}
                        ${media-ndk}
-                       #${srslibrtmp-lib}
                        )
 else (${CMAKE_SYSTEM_VERSION} LESS "21")
     target_link_libraries( # Specifies the target library.
@@ -92,6 +75,6 @@ else (${CMAKE_SYSTEM_VERSION} LESS "21")
                            ${android-lib}
                            ${egl-lib}
                            ${glesv2-lib}
-                           #${srslibrtmp-lib}
+                           ${sles-lib}
                            )
 endif(${CMAKE_SYSTEM_VERSION} MATCHES "21")

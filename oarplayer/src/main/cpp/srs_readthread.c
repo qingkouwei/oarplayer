@@ -1,6 +1,4 @@
-//
-// Created by 申俊伟 on 2017/12/15.
-//
+
 
 #include <malloc.h>
 #include "srs_readthread.h"
@@ -40,17 +38,11 @@ void *read_thread(void *data) {
         int size;
         char type;
         char* data;
-        u_int32_t timestamp;//, pts;
-        //LOGE("start read...");
+        u_int32_t timestamp;
         int ret = srs_rtmp_read_packet(rtmp, &type, &timestamp, &data, &size);
         if ( ret != 0) {
-            LOGE("read packet ret : %d", ret);
-            //goto rtmp_destroy;
+            LOGE("read packet error, ret : %d", ret);
         }
-        /*if (srs_utils_parse_timestamp(timestamp, type, data, size, &pts) != 0) {
-            LOGE("parse timestampe failed...");
-            goto rtmp_destroy;
-        }*/
         if(type == SRS_RTMP_TYPE_AUDIO){
             char audio_fromat_type = srs_utils_flv_audio_sound_format(data,size);//编码类型
             char audio_rate = srs_utils_flv_audio_sound_rate(data,size);//采样率
@@ -58,21 +50,31 @@ void *read_thread(void *data) {
             char audio_type = srs_utils_flv_audio_sound_type(data,size);//声道
             char audio_packet_type= srs_utils_flv_audio_aac_packet_type(data,size);
             if(audio_fromat_type == 10 && audio_packet_type == 0){
-                LOGI("audio pps:%d %d %d %d", data[0], data[1], data[2], data[3]);
+                LOGI("audio pps:%d %d %d %d, sample_size = %d", data[0], data[1], data[2], data[3], sampe_size);
                 oar->metadata->audio_codec = audio_fromat_type;
                 oar->metadata->sample_format = sampe_size;
-                oar->metadata->sample_rate = audio_rate;
-                oar->metadata->channels = audio_type;
+                oar->metadata->sample_rate = 44100;// flv acc sample_rate is constant 3(44100)
+                oar->metadata->channels = audio_type == 1?2 : 1;
                 //oar->metadata->audio_bitrate =;
-                oar->metadata->audio_pps_size = size;
-                oar->metadata->audio_pps = malloc(sizeof(char)*size);
-                memcpy(oar->metadata->audio_pps, data, size);
+                oar->metadata->audio_pps_size = 2;
+                oar->metadata->audio_pps = malloc(sizeof(char)*2);
+                memcpy(oar->metadata->audio_pps, data+2, 2);
                 oar->metadata->has_audio = 1;
                 if(oar->metadata->has_video){
                     oar->send_message(oar, oar_message_decoder_configuration);
                 }
             }else{
-
+                /*LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                     srs_human_flv_tag_type2string(type),type, timestamp,size,
+                     data[0],data[1],data[2],data[3],
+                     data[4],data[5],data[6],data[7],
+                     data[8],data[9],data[10],data[11],
+                     data[12],data[13],data[14],data[15]);*/
+                LOGE("audio packet size:%d", oar->audio_packet_queue->count);
+                char *audio = (char*)malloc(sizeof(char) *(size - 2));
+                memcpy(audio, data+2, size - 2);
+                oar_packet_queue_put(oar->audio_packet_queue, size-2,PktType_Audio, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, 0, audio);
+                free(audio);
             }
             //LOGI("audio format:%d, rate:%d, sample size:%d, type:%d, pakcet type:%d",
                  //audio_fromat_type, audio_rate, sampe_size,audio_type, audio_packet_type);
@@ -129,7 +131,7 @@ void *read_thread(void *data) {
                      data[12],data[13],data[14],data[15]);*/
                 char *video = (char*)malloc(sizeof(char) *(size - 5));
                 memcpy(video, data+5, size - 5);
-                oar_packet_queue_put(oar->video_packet_queue, size-5,PktType_Video, timestamp, timestamp, isKeyFrame, video);
+                oar_packet_queue_put(oar->video_packet_queue, size-5,PktType_Video, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, isKeyFrame, video);
                 free(video);
             }
 //            LOGI("video codec_id:%d, isKeyFrame:%d, packet_type:%d", video_codec_id, isKeyFrame, video_packet_type);
@@ -182,7 +184,7 @@ void *read_thread(void *data) {
             }
         }
 
-//        LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d", srs_human_flv_tag_type2string(type),type, timestamp,size,data[0],data[1],data[2],data[3]);
+        LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d", srs_human_flv_tag_type2string(type),type, timestamp,size,data[0],data[1],data[2],data[3]);
 
         srs_rtmp_free_packet(data);
     }

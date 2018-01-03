@@ -12,7 +12,7 @@
 
 #define _JNILOG_TAG "oar_player_gl_thread"
 #include "_android.h"
-#include "oar_mediacodec.h"
+#include "oar_video_mediacodec.h"
 #include "oar_clock.h"
 
 static void init_egl(oarplayer * oar){
@@ -110,7 +110,7 @@ void change_model(oar_video_render_context *ctx) {
 
 static inline void oar_player_release_video_frame(oarplayer *oar, OARFrame *frame) {
     if (!oar->is_sw_decode) {
-        oar_mediacodec_release_buffer(oar, frame);
+        oar_video_mediacodec_release_buffer(oar, frame);
     }
     //TODO release frame
     oar->video_frame = NULL;
@@ -142,6 +142,7 @@ static inline int draw_video_frame(oarplayer *oar) {
     // buffer empty  ==> sleep 10ms , return 0
     // eos           ==> return -2
     if (oar->video_frame == NULL) {
+        LOGE("video_frame is null...");
         if (oar->eof) {
             return -2;
         } else {
@@ -154,11 +155,11 @@ static inline int draw_video_frame(oarplayer *oar) {
 
     int64_t diff = 0;
     //TODO 音视频同步
-/*    if(oar->av_track_flags & OAR_HAS_AUDIO_FLAG){
+    if(oar->metadata->has_audio){
         diff = time_stamp - (oar->audio_clock->pts + oar->audio_player_ctx->get_delta_time(oar->audio_player_ctx));
-    }else{*/
+    }else{
         diff = time_stamp - oar_clock_get(oar->video_clock);
-//    }
+    }
     LOGI("time_stamp:%lld, clock:%lld, diff:%lld",time_stamp , oar_clock_get(oar->video_clock), diff);
     oar_model *model = oar->video_render_ctx->model;
 
@@ -177,7 +178,7 @@ static inline int draw_video_frame(oarplayer *oar) {
     } else {
         // if diff > WAIT_FRAME_SLEEP_US   then  use previous frame
         // else  use current frame   and  release frame
-        LOGI("start draw...");
+//        LOGI("start draw...");
         pthread_mutex_lock(oar->video_render_ctx->lock);
         model->update_frame(model, oar->video_frame);
         pthread_mutex_unlock(oar->video_render_ctx->lock);
@@ -215,9 +216,11 @@ void *oar_player_gl_thread(void *data) {
         }
         pthread_mutex_unlock(ctx->lock);
         // 处理pd->status
-        if (oar->status == PAUSED || oar->status == BUFFER_EMPTY) {
+        if (oar->status == PAUSED /*|| oar->status == BUFFER_EMPTY*/) {
+            LOGE("gl thread sleep...");
             usleep(NULL_LOOP_SLEEP_US);
-        } else if (oar->status == PLAYING) {
+        } else if (oar->status == PLAYING|| oar->status == BUFFER_EMPTY) {
+            LOGE("drawframe....");
             ret = draw_video_frame(oar);
             if (ret == 0) {
                 continue;

@@ -9,6 +9,12 @@
 #define OAR_HAS_AUDIO_FLAG 0x1
 #define OAR_HAS_VIDEO_FLAG 0x2
 
+#define NSEC_PER_SEC  1000000000L
+#define NSEC_PER_MSEC 1000000L
+#define USEC_PER_SEC  1000000L
+#define NSEC_PER_USEC 1000L
+#define USEC_PRE_MSEC 1000L
+#define MSEC_PRE_SEC 1000L
 
 #define oar_metadata_video_width "width"
 #define oar_metadata_video_height "height"
