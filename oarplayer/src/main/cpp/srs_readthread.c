@@ -21,40 +21,44 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <malloc.h>
-#include "srs_readthread.h"
 #define _JNILOG_TAG "srs_player"
 #include "_android.h"
+#include <malloc.h>
+#include <string.h>
+#include "srs_readthread.h"
 #include "srs_librtmp.h"
 #include "oarplayer_type_def.h"
 #include "oar_packet_queue.h"
 
+
+#define _LOGD if(isDebug) LOGD
+
 void *read_thread(void *data) {
-    LOGI("read thread start...");
-    LOGI("version: %d.%d.%d\n", srs_version_major(), srs_version_minor(), srs_version_revision());
+    _LOGD("read thread start...");
+    _LOGD("version: %d.%d.%d\n", srs_version_major(), srs_version_minor(), srs_version_revision());
     oarplayer *oar = data;
     srs_rtmp_t rtmp = srs_rtmp_create(oar->url);
     if(rtmp == NULL){
         LOGE("create srs rtmp failed.");
     }
-    LOGI("srs_rtmp_create success, url is : %s", oar->url);
+    _LOGD("srs_rtmp_create success, url is : %s", oar->url);
     int ret = srs_rtmp_handshake(rtmp);
     if(ret != 0){
         LOGE("simple handshake failed:%d",ret);
         goto rtmp_destroy;
     }
-    LOGI("simple handshake success.");
+    _LOGD("simple handshake success.");
     if(srs_rtmp_connect_app(rtmp) != 0){
         LOGE("connect vhost/app failed.");
         goto rtmp_destroy;
     }
-    LOGI("connect vhost/app success.");
+    _LOGD("connect vhost/app success.");
     if(srs_rtmp_play_stream(rtmp) != 0){
         LOGE("play stream failed.");
         goto rtmp_destroy;
     }
-    LOGI("play stream success.");
-    LOGI("error_code:%d", oar->error_code);
+    _LOGD("play stream success.");
+    _LOGD("error_code:%d", oar->error_code);
     while(oar->error_code == 0){
         int size;
         char type;
@@ -71,13 +75,16 @@ void *read_thread(void *data) {
             char audio_type = srs_utils_flv_audio_sound_type(data,size);//声道
             char audio_packet_type= srs_utils_flv_audio_aac_packet_type(data,size);
             if(audio_fromat_type == 10 && audio_packet_type == 0){
-                LOGI("audio pps:%d %d %d %d, sample_size = %d", data[0], data[1], data[2], data[3], sampe_size);
+                _LOGD("audio pps:%d %d %d %d, sample_size = %d", data[0], data[1], data[2], data[3], sampe_size);
                 oar->metadata->audio_codec = audio_fromat_type;
                 oar->metadata->sample_format = sampe_size;
                 oar->metadata->sample_rate = 44100;// flv acc sample_rate is constant 3(44100)
                 oar->metadata->channels = audio_type == 1?2 : 1;
-                //oar->metadata->audio_bitrate =;
                 oar->metadata->audio_pps_size = 2;
+                if(oar->metadata->audio_pps){
+                    free(oar->metadata->audio_pps);
+                    oar->metadata->audio_pps = NULL;
+                }
                 oar->metadata->audio_pps = malloc(sizeof(char)*2);
                 memcpy(oar->metadata->audio_pps, data+2, 2);
                 oar->metadata->has_audio = 1;
@@ -85,19 +92,19 @@ void *read_thread(void *data) {
                     oar->send_message(oar, oar_message_decoder_configuration);
                 }
             }else{
-                /*LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                /*_LOGD("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
                      srs_human_flv_tag_type2string(type),type, timestamp,size,
                      data[0],data[1],data[2],data[3],
                      data[4],data[5],data[6],data[7],
                      data[8],data[9],data[10],data[11],
                      data[12],data[13],data[14],data[15]);*/
-                LOGE("audio packet size:%d", oar->audio_packet_queue->count);
+                _LOGD("audio packet size:%d", oar->audio_packet_queue->count);
                 char *audio = (char*)malloc(sizeof(char) *(size - 2));
                 memcpy(audio, data+2, size - 2);
                 oar_packet_queue_put(oar->audio_packet_queue, size-2,PktType_Audio, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, 0, audio);
                 free(audio);
             }
-            //LOGI("audio format:%d, rate:%d, sample size:%d, type:%d, pakcet type:%d",
+            //_LOGD("audio format:%d, rate:%d, sample size:%d, type:%d, pakcet type:%d",
                  //audio_fromat_type, audio_rate, sampe_size,audio_type, audio_packet_type);
         }else if(type == SRS_RTMP_TYPE_VIDEO){
             char video_codec_id = srs_utils_flv_video_codec_id(data, size);
@@ -115,6 +122,10 @@ void *read_thread(void *data) {
                 oar->metadata->video_pps = malloc(sizeof(char) * pps_size);
                 memcpy(oar->metadata->video_pps, data+12+sps_size + 4, pps_size);
                 oar->metadata->video_pps_size = pps_size;*/
+                if(oar->metadata->video_extradata != NULL){
+                    free(oar->metadata->video_extradata);
+                    oar->metadata->video_extradata = NULL;
+                }
                 oar->metadata->video_extradata = malloc(sizeof(char) * (size-5));
                 memcpy(oar->metadata->video_extradata, data+5, size-5);
                 oar->metadata->video_extradata_size = size -5;
@@ -123,7 +134,7 @@ void *read_thread(void *data) {
                 if(oar->metadata->has_audio){
                     oar->send_message(oar, oar_message_decoder_configuration);
                 }
-                LOGI("total size : %d, SPS size :%d, pps size : %d", size,0, 0);
+                _LOGD("total size : %d, SPS size :%d, pps size : %d", size,0, 0);
 
                 //23 0 0 0 0
                 // 1(分隔符)
@@ -133,7 +144,7 @@ void *read_thread(void *data) {
                 // 107 77 64 31 232 128 40 2 221 127 181 1 1 1 64 0 0 250 64 0 58 152 3 198 12 68 128 (sps)
                 // 1(分隔符)
                 // 0 4 104 235 239 32 (pps size)
-                /*LOGE("video sps:%d, %d %d %d %d, %d, %d %d %d,%0x %0x, sps size = %d %d ,%d %d %d %d %d %d %d, pps size = %d %d %d",
+                /*_LOGE("video sps:%d, %d %d %d %d, %d, %d %d %d,%0x %0x, sps size = %d %d ,%d %d %d %d %d %d %d, pps size = %d %d %d",
                      data[0], data[1],data[2],data[3],data[4],
                      data[5],
                      data[6],data[7],data[8],
@@ -144,7 +155,7 @@ void *read_thread(void *data) {
 
 
             }else{
-                /*LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                /*_LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
                      srs_human_flv_tag_type2string(type),type, timestamp,size,
                      data[0],data[1],data[2],data[3],
                      data[4],data[5],data[6],data[7],
@@ -155,7 +166,7 @@ void *read_thread(void *data) {
                 oar_packet_queue_put(oar->video_packet_queue, size-5,PktType_Video, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, isKeyFrame, video);
                 free(video);
             }
-//            LOGI("video codec_id:%d, isKeyFrame:%d, packet_type:%d", video_codec_id, isKeyFrame, video_packet_type);
+//            _LOGD("video codec_id:%d, isKeyFrame:%d, packet_type:%d", video_codec_id, isKeyFrame, video_packet_type);
 
         }else if(type == SRS_RTMP_TYPE_SCRIPT){
             if (srs_rtmp_is_onMetaData(type, data, size)) {
@@ -167,14 +178,14 @@ void *read_thread(void *data) {
                         break;
                     }
                     if(srs_amf0_is_string(amf0)){
-//                        LOGI("string...");
+//                        _LOGD("string...");
                     }else if(srs_amf0_is_object(amf0)){
-//                        LOGI("object...");
+//                        _LOGD("object...");
                         /*char* amf0_str = NULL;
                         srs_human_amf0_print(amf0, &amf0_str, NULL);
-                        LOGI("nb_parsed_this:%d, str:%s", nb_parsed_this, amf0_str);*/
+                        _LOGD("nb_parsed_this:%d, str:%s", nb_parsed_this, amf0_str);*/
                         int count = srs_amf0_object_property_count(amf0);
-//                        LOGI("count : %d", count);
+//                        _LOGD("count : %d", count);
                        int i = 0;
                         for(i=0;i<count;i++){
                             const char * key = srs_amf0_object_property_name_at(amf0,i);
@@ -190,7 +201,7 @@ void *read_thread(void *data) {
                             }else if(strcmp(oar_metadata_audio_rate, key)==0){
                                 oar->metadata->audio_bitrate =  srs_amf0_to_number(value);
                             }
-                            //LOGI("index is :%d,key is %s", i, key);
+                            //_LOGD("index is :%d,key is %s", i, key);
                             if(key){
                                 free((void*)key);
                                 key = NULL;
@@ -205,10 +216,11 @@ void *read_thread(void *data) {
             }
         }
 
-        LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d", srs_human_flv_tag_type2string(type),type, timestamp,size,data[0],data[1],data[2],data[3]);
+        _LOGD("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d", srs_human_flv_tag_type2string(type),type, timestamp,size,data[0],data[1],data[2],data[3]);
 
-        srs_rtmp_free_packet(data);
+        free(data);
     }
+    srs_rtmp_destroy(rtmp);
     return NULL;
 rtmp_destroy:
     LOGE("goto rtmp destroy...");

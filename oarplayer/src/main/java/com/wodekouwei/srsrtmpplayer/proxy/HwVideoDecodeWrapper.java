@@ -33,11 +33,12 @@ import java.nio.ByteOrder;
 
 public class HwVideoDecodeWrapper {
     private final static String TAG = "HwVideoDecodeWrapper";
+    private final static boolean isDebug = false;
     private static MediaCodec codec = null;
     private static MediaFormat format = null;
     private static Surface outputSurface = null;
     public static void init(String codecName, int width, int height, ByteBuffer csd0, ByteBuffer csd1){
-        Log.i(TAG, "init: codecName = " + codecName + ";width = " + width + ";height = " + height);
+        if(isDebug) Log.i(TAG, "init: codecName = " + codecName + ";width = " + width + ";height = " + height);
         try {
             codec = MediaCodec.createDecoderByType(codecName);
             format = new MediaFormat();
@@ -67,10 +68,10 @@ public class HwVideoDecodeWrapper {
             }
             codec.configure(format, outputSurface, null, 0);
             codec.start();
-            Log.i(TAG, "init decodec success...");
+            if(isDebug) Log.i(TAG, "init decodec success...");
         } catch (IOException e) {
             e.printStackTrace();
-            Log.e(TAG, "init decodec exception:" + e.getMessage());
+            if(isDebug) Log.e(TAG, "init decodec exception:" + e.getMessage());
         }
     }
 
@@ -103,7 +104,6 @@ public class HwVideoDecodeWrapper {
     private static MediaCodec.BufferInfo output_buffer_info = new MediaCodec.BufferInfo();
     public static ByteBuffer dequeueOutputBufferIndex(long timeout){
         int id = codec.dequeueOutputBuffer(output_buffer_info, timeout);
-        //Log.e(TAG, "dequeueOutputBuffer = " + id);
         bf.position(0);
         bf.putInt(id);
         if(id >= 0){
@@ -117,7 +117,7 @@ public class HwVideoDecodeWrapper {
         try{
             codec.releaseOutputBuffer(id, true);
         }catch (Exception e){
-            Log.e(TAG, "catch exception when releaseOutPutBuffer  id==>" + id);
+            if(isDebug) Log.e(TAG, "catch exception when releaseOutPutBuffer  id==>" + id);
             e.printStackTrace();
         }
 

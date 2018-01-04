@@ -31,6 +31,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __LOG_LEVEL
 #define __LOG_LEVEL ANDROID_LOG_DEBUG
 #endif
+
+#define isDebug 0
+
 #define  _JNILOG(LEVEL, FMT, ...)  if (LEVEL >= __LOG_LEVEL) \
 	__android_log_print(LEVEL,_JNILOG_TAG, "[%s():%d]" FMT, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define  LOGD(...)  _JNILOG(ANDROID_LOG_DEBUG,__VA_ARGS__)
@@ -41,9 +44,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LOG_FUNC_FAIL_TRACE()               do {LOGE("%s: failed\n", __func__);} while (0)
 #define LOG_FUNC_FAIL_TRACE1(x__)           do {LOGE("%s: failed: %s\n", __func__, x__);} while (0)
 #define LOG_FUNC_FAIL_TRACE2(x1__, x2__)    do {LOGE("%s: failed: %s %s\n", __func__, x1__, x2__);} while (0)
-
-#ifndef NELEM
-#define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
-#endif
 
 #endif

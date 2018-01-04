@@ -20,6 +20,8 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+#define _JNILOG_TAG "oarplayer_jni"
+#include "_android.h"
 
 #include <jni.h>
 #include <assert.h>
@@ -29,10 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <malloc.h>
 
-#define _JNILOG_TAG "oarplayer_jni"
-#include "_android.h"
 #include "jni_utils.h"
-
 #include "oarplayer_type_def.h"
 #include "oar_player.h"
 
@@ -43,6 +42,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #define JNI_CLASS_OARPLAYER     "com/wodekouwei/srsrtmpplayer/OARPlayer"
+#ifndef NELEM
+#define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
+#endif
 
 static oarplayer *oar;
 static int oar_run_android_version;
@@ -55,24 +57,23 @@ typedef struct player_fields_t {
 static player_fields_t g_clazz;
 
 static void
-SrsPlayer_native_init(JNIEnv *env,int run_android_version, int best_samplerate)
+SrsPlayer_native_init(JNIEnv *env,jobject thiz,int run_android_version, int best_samplerate)
 {
     oar_run_android_version = run_android_version;
     oar_best_samplerate = best_samplerate;
+    oar = oar_player_create(env,thiz,oar_run_android_version,oar_best_samplerate);
+    oar->jniEnv = env;
+    (*env)->GetJavaVM(env, &oar->vm);
     LOGI("native init...");
+
 
 }
 static void
 SrsPlayer_setDataSourceAndHeaders(
         JNIEnv *env, jobject thiz, jstring path,
         jobjectArray keys, jobjectArray values){
-    oar = oar_player_create(env,thiz,oar_run_android_version,oar_best_samplerate);
-    oar->jniEnv = env;
-    (*env)->GetJavaVM(env, &oar->vm);
-    LOGE("vm = %p, tid = %d", oar->vm, gettid());
     const char *c_path = NULL;
     c_path = (*env)->GetStringUTFChars(env, path, NULL );
-    //LOGE("path : %s", c_path);
     int len = strlen(c_path);
     oar->url = malloc(sizeof(char)*len);
     strcpy(oar->url, c_path);
@@ -102,6 +103,23 @@ SrsPlayer_start(JNIEnv *env, jobject thiz)
 static void
 SrsPlayer_stop(JNIEnv *env, jobject thiz)
 {
+    oar_player_stop(oar);
+}
+static void
+SrsPlayer_release(JNIEnv *env, jobject thiz){
+    oar_player_release(oar);
+    oar = NULL;
+}
+static float
+SrsPlayer_getCurrentTime() {
+    if (oar) {
+        if (oar->metadata->has_audio) {
+            return (float) oar->audio_clock->pts / 1000000;
+        } else if (oar->metadata->has_video) {
+            return (float) oar->video_clock->pts / 1000000;
+        }
+    }
+    return 0.0f;
 }
 static JNINativeMethod g_methods[] = {
         {
@@ -112,7 +130,9 @@ static JNINativeMethod g_methods[] = {
         { "_setVideoSurface",       "(Landroid/view/Surface;)V", (void *) SrsPlayer_setVideoSurface },
         { "_prepareAsync",          "()V",      (void *) SrsPlayer_prepareAsync },
         { "_start",                 "()V",      (void *) SrsPlayer_start },
+        { "_getCurrentTime",                 "()F",      (void *) SrsPlayer_getCurrentTime },
         { "_stop",                  "()V",      (void *) SrsPlayer_stop },
+        { "_release",               "()V",      (void *) SrsPlayer_release },
         { "native_init",            "(II)V",      (void *) SrsPlayer_native_init },
 };
 
@@ -120,7 +140,6 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
     JNIEnv* env = NULL;
 
-    //g_jvm = vm;
     if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK) {
         return -1;
     }

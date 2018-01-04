@@ -37,7 +37,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct oarplayer;
 typedef struct oar_java_class {
-//    jclass XLPlayer_class;
+//    jclass OARPlayer_class;
     jmethodID player_onPlayStatusChanged;
     jmethodID player_onPlayError;
 
@@ -184,8 +184,6 @@ typedef enum {
     PktType_AConf = 3
 }PktType_e;
 typedef struct oar_metadata_t{
-    long duration;
-
     int video_codec;
     int has_video;
 
@@ -291,7 +289,7 @@ typedef struct oar_audio_player_context {
     uint8_t * buffer;
     int frame_size;
 
-    void (*play)(struct oar_audio_player_context *pd);
+    void (*play)(struct oarplayer *oar);
 
     void (*shutdown)();
 
@@ -313,7 +311,6 @@ typedef struct oarplayer {
     //用户设置
     int buffer_size_max;
     float buffer_time_length;
-    bool force_sw_decode;
     float read_timeout;
 
     char *url;
@@ -328,12 +325,6 @@ typedef struct oarplayer {
     pthread_t audio_decode_thread;
     pthread_t video_decode_thread;
     pthread_t gl_thread;
-
-    // 封装
-    int video_index, audio_index;
-    //是否有 音频0x1 视频0x2 字幕0x4
-    uint8_t av_track_flags;
-    uint64_t timeout_start;
 
     // packet容器
     oar_packet_queue *video_packet_queue, *audio_packet_queue;
@@ -352,8 +343,6 @@ typedef struct oarplayer {
     OARFrame *video_frame;
     int frame_rotation;
 
-    //软解视频
-    //TODO
     // 硬解
     oar_video_mediacodec_context *video_mediacodec_ctx;
 
@@ -361,14 +350,9 @@ typedef struct oarplayer {
     oar_clock *video_clock;
     oar_clock *audio_clock;
 
-    // 是否软解
-    bool is_sw_decode;
 
     // play background
     bool just_audio;
-
-    //end of file
-    bool eof;
 
     // error code
     // -1 stop by user

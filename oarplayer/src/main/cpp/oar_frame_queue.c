@@ -20,12 +20,14 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+#define _JNILOG_TAG "oar_frame_queue"
+#include "_android.h"
 #include <pthread.h>
 #include <malloc.h>
 #include <string.h>
 #include "oar_frame_queue.h"
-#define _JNILOG_TAG "oar_frame_queue"
-#include "_android.h"
+
+#define _LOGD if(isDebug) LOGD
 
 /*static OARFrame *newFrame(const uint8_t *data, int size, PktType_e type)
 {
@@ -82,11 +84,11 @@ void oar_frame_queue_free(oar_frame_queue *queue){
 }
 
 int oar_frame_queue_put(oar_frame_queue *queue, OARFrame *f){
-    //LOGE("start oar_frame_queue_put:%d", queue->count);
+    //_LOGD("start oar_frame_queue_put:%d", queue->count);
     pthread_mutex_lock(queue->mutex);
     while(queue->count == queue->size){
         if(f->type == PktType_Audio){
-            LOGE("frame queue wait...");
+            _LOGD("frame queue wait...");
         }
 
         pthread_cond_wait(queue->cond, queue->mutex);
@@ -99,13 +101,13 @@ int oar_frame_queue_put(oar_frame_queue *queue, OARFrame *f){
         queue->lastFrame = queue->cachedFrames = f;
     }
     queue->count++;
-    //LOGE("oar_frame_queue_put:%d", queue->count);
+    //_LOGD("oar_frame_queue_put:%d", queue->count);
     pthread_mutex_unlock(queue->mutex);
     return 0;
 }
 
 OARFrame *  oar_frame_queue_get(oar_frame_queue *queue){
-    //LOGE("start oar_frame_queue_get:%d", queue->count);
+    //_LOGD("start oar_frame_queue_get:%d", queue->count);
     pthread_mutex_lock(queue->mutex);
     if (queue->count == 0) {
         pthread_mutex_unlock(queue->mutex);
@@ -128,7 +130,7 @@ OARFrame *  oar_frame_queue_get(oar_frame_queue *queue){
     }
     pthread_cond_signal(queue->cond);
     pthread_mutex_unlock(queue->mutex);
-//    LOGI("pts=%lld", ret->pts);
+//    _LOGD("pts=%lld", ret->pts);
     return ret;
 }
 

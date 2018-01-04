@@ -20,17 +20,14 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
+#define _JNILOG_TAG "oar_player"
+#include "_android.h"
 #include <malloc.h>
 #include <unistd.h>
 #include "oar_player.h"
 #include "oar_clock.h"
 #include "oar_jni_reflect.h"
 #include "oar_packet_queue.h"
-
-#define _JNILOG_TAG "oar_player"
-
-#include "_android.h"
 #include "srs_readthread.h"
 #include "oar_video_render.h"
 #include "oar_player_video_hw_decode_thread.h"
@@ -88,7 +85,7 @@ static void on_error_cb(oarplayer *pd, int error_code) {
 
 static void buffer_empty_cb(void *data) {
     oarplayer *oar = data;
-    if (oar->status != BUFFER_EMPTY && !oar->eof) {
+    if (oar->status != BUFFER_EMPTY) {
         oar->send_message(oar, oar_message_buffer_empty);
     }
 }
@@ -102,15 +99,10 @@ static void buffer_full_cb(void *data) {
 
 static void reset(oarplayer *oar) {
     if (oar == NULL) return;
-    oar->eof = false;
-    oar->av_track_flags = 0;
     oar->just_audio = false;
-    oar->video_index = -1;
-    oar->audio_index = -1;
     oar->url = NULL;
     oar->audio_frame = NULL;
     oar->video_frame = NULL;
-    oar->timeout_start = 0;
     oar_clock_reset(oar->audio_clock);
     oar_clock_reset(oar->video_clock);
     oar->error_code = 0;
@@ -148,14 +140,14 @@ oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int be
     oar->best_samplerate = best_samplerate;
     oar->buffer_size_max = default_buffer_size;
     oar->buffer_time_length = default_buffer_time;
-    oar->force_sw_decode = false;
-    oar->is_sw_decode = false;
     oar->read_timeout = default_read_timeout;
 
 
     oar->metadata = (oar_metadata_t*)malloc(sizeof(oar_metadata_t));
     oar->metadata->has_audio = 0;
     oar->metadata->has_video = 0;
+    oar->metadata->video_extradata = NULL;
+    oar->metadata->audio_pps = NULL;
 
     oar->audio_packet_queue = oar_queue_create();
     oar->video_packet_queue = oar_queue_create();
@@ -197,13 +189,47 @@ int oar_player_play(oarplayer *oar){
     return 0;
 }
 static inline void clean_queues(oarplayer *oar) {
-    // clear pd->audio_frame audio_frame_queue  audio_packet_queue
-    if ((oar->av_track_flags & OAR_HAS_AUDIO_FLAG) > 0) {
-        //TODO
+    // clear oar->audio_frame audio_frame_queue  audio_packet_queue
+    if (oar->metadata->has_audio) {
+        if(oar->audio_frame != NULL){
+            free(oar->audio_frame);
+        }
+        while (1) {
+            oar->audio_frame = oar_frame_queue_get(oar->audio_frame_queue);
+            if (oar->audio_frame == NULL) {
+                break;
+            }
+            free(oar->audio_frame);
+        }
+        OARPacket *packet = NULL;
+        while (1) {
+            packet = oar_packet_queue_get(oar->audio_packet_queue);
+            if (packet == NULL) {
+                break;
+            }
+            free(packet);
+        }
     }
-    // clear pd->video_frame video_frame_queue video_frame_packet
-    if ((oar->av_track_flags & OAR_HAS_VIDEO_FLAG) > 0) {
-        //TODO
+    // clear oar->video_frame video_frame_queue video_frame_packet
+    if (oar->metadata->has_video) {
+        if(oar->video_frame != NULL){
+            free(oar->video_frame);
+        }
+        while (1) {
+            oar->video_frame = oar_frame_queue_get(oar->video_frame_queue);
+            if (oar->video_frame == NULL) {
+                break;
+            }
+            free(oar->video_frame);
+        }
+        OARPacket *packet = NULL;
+        while (1) {
+            packet = oar_packet_queue_get(oar->video_packet_queue);
+            if (packet == NULL) {
+                break;
+            }
+            free(packet);
+        }
     }
 }
 static int stop(oarplayer *oar) {
@@ -225,19 +251,15 @@ static int stop(oarplayer *oar) {
     // 停止各个thread
     void *thread_res;
     pthread_join(oar->read_stream_thread, &thread_res);
-    if ((oar->av_track_flags & OAR_HAS_VIDEO_FLAG) > 0) {
+    if (oar->metadata->has_video) {
         pthread_join(oar->video_decode_thread, &thread_res);
-        if (oar->is_sw_decode) {
-            //avcodec_free_context(&pd->video_codec_ctx);
-        } else {
-            oar_video_mediacodec_release_context(oar);
-        }
+        oar_video_mediacodec_release_context(oar);
         pthread_join(oar->gl_thread, &thread_res);
     }
 
-    if ((oar->av_track_flags & OAR_HAS_AUDIO_FLAG) > 0) {
+    if (oar->metadata->has_audio) {
         pthread_join(oar->audio_decode_thread, &thread_res);
-        //oar->audio_player_ctx->shutdown();
+        oar->audio_player_ctx->shutdown();
     }
 
     clean_queues(oar);
@@ -285,10 +307,16 @@ int oar_player_release(oarplayer *oar){
     free(oar);
     return 0;
 }
+static int oar_player_resume(oarplayer *oar) {
+    oar->change_status(oar, PLAYING);
+    if (oar->metadata->has_audio) {
+        oar->audio_player_ctx->play(oar);
+    }
+    return 0;
+}
 static void change_status(oarplayer *pd, PlayStatus status) {
     if (status == BUFFER_FULL) {
-        //oar_player_resume(pd);
-        pd->status = PLAYING;
+        oar_player_resume(pd);
     } else {
         pd->status = status;
     }
@@ -317,23 +345,14 @@ static void on_decoder_configuration(oarplayer *oar){
     oar->metadata->video_bitrate,oar->metadata->fps,oar->metadata->width,
          oar->metadata->height, oar->metadata->audio_bitrate);
     set_buffer_time(oar);
-    int ret;
-    /*if (oar->is_sw_decode) {
-        ret = sw_codec_init(oar);
-    } else {*/
-        ret = hw_codec_init(oar);
-//    }
+    int ret = hw_codec_init(oar);
     if (ret != 0) {
         LOGE("video decoder failed");
     }
     audio_codec_init(oar);
 
     if (oar->metadata->has_video) {
-        /*if (oar->is_sw_decode) {
-            pthread_create(&oar->video_decode_thread, NULL, video_decode_sw_thread, oar);
-        } else {*/
-            pthread_create(&oar->video_decode_thread, NULL, video_decode_hw_thread, oar);
-//        }
+        pthread_create(&oar->video_decode_thread, NULL, video_decode_hw_thread, oar);
         pthread_create(&oar->gl_thread, NULL, oar_player_gl_thread, oar);
     }
     if (oar->metadata->has_audio) {

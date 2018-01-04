@@ -2,7 +2,11 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 26
-
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['jni_lib_src']
+        }
+    }
 
 
     defaultConfig {
@@ -14,7 +18,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++11 -frtti -fexceptions -Wformat -Werror=format-security"
+                //cppFlags "-std=c++11 -frtti -fexceptions -Wformat -Werror=format-security"
             }
         }
     }

@@ -24,6 +24,7 @@ package com.wodekouwei.srsrtmpplayer;
 
 import android.os.Build;
 import android.os.PowerManager;
+import android.util.Log;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -34,7 +35,7 @@ import java.io.IOException;
 
 public class OARPlayer {
     private final static String TAG = OARPlayer.class.getName();
-
+    private final static boolean isDebug = false;
     private PowerManager.WakeLock mWakeLock = null;
     private boolean mScreenOnWhilePlaying;
     private boolean mStayAwake;
@@ -42,7 +43,7 @@ public class OARPlayer {
     private String mDataSource;
 
     private static volatile boolean mIsNativeInitialized = false;
-    private static void initNativeOnce() {
+    private void initNativeOnce() {
         synchronized (OARPlayer.class) {
             if (!mIsNativeInitialized) {
                 native_init(Build.VERSION.SDK_INT, 44100);
@@ -57,23 +58,8 @@ public class OARPlayer {
     private void initPlayer() {
         System.loadLibrary("oarp-lib");
         initNativeOnce();
-        /*
-        Looper looper;
-        if ((looper = Looper.myLooper()) != null) {
-            mEventHandler = new EventHandler(this, looper);
-        } else if ((looper = Looper.getMainLooper()) != null) {
-            mEventHandler = new EventHandler(this, looper);
-        } else {
-            mEventHandler = null;
-        }*/
-
-        /*
-         * Native setup requires a weak reference to our object. It's easier to
-         * create it here than in C++.
-         */
-//        native_setup(new WeakReference<OARPlayer>(this));
     }
-    private static native void native_init(int run_android_version, int best_samplerate);
+    private native void native_init(int run_android_version, int best_samplerate);
 
     private native void _setDataSource(String path, String[] keys, String[] values)
             throws IOException, IllegalArgumentException, SecurityException, IllegalStateException;
@@ -99,17 +85,26 @@ public class OARPlayer {
         stayAwake(false);
         _stop();
     }
+    private native void _stop() throws IllegalStateException;
+
+    public void release(){
+        _release();
+    }
+    private native void _release();
+
     public void setSurface(Surface surface){
         _setVideoSurface(surface);
     }
-
-    private native void _stop() throws IllegalStateException;
-
     /*
-         * Update the IjkMediaPlayer SurfaceTexture. Call after setting a new
-         * display surface.
-         */
+     * Update the IjkMediaPlayer SurfaceTexture. Call after setting a new
+     * display surface.
+     */
     private native void _setVideoSurface(Surface surface);
+
+    public float getCurrentTime(){
+        return _getCurrentTime();
+    }
+    private native float _getCurrentTime();
 
     private void stayAwake(boolean awake) {
         if (mWakeLock != null) {
@@ -130,7 +125,7 @@ public class OARPlayer {
 
     @SuppressWarnings("unused")
     void onPlayStatusChanged(int status) {
-
+        if(isDebug) Log.i(TAG, "onPlayStatusChanged:" + status);
     }
 
     /**
@@ -139,6 +134,6 @@ public class OARPlayer {
      * @param error error code from native
      */
     void onPlayError(int error) {
-
+        if(isDebug) Log.i(TAG, "onPlayError:" + error);
     }
 }

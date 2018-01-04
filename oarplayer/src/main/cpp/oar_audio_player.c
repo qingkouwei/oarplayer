@@ -20,20 +20,21 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+#define _JNILOG_TAG "audio_player"
+#include "_android.h"
 #include "oar_audio_player.h"
-
 #include "oar_frame_queue.h"
 #include "oar_clock.h"
-
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 #include <assert.h>
 #include <pthread.h>
 #include <malloc.h>
 #include <string.h>
-#define _JNILOG_TAG "audio_player"
-#include "_android.h"
 #include "oar_audio_mediacodec.h"
+
+#define isDebug 1
+#define _LOGD if(isDebug) LOGI
 
 //engine interface
 static SLObjectItf engineObject = NULL;
@@ -58,22 +59,18 @@ static int64_t get_delta_time(oar_audio_player_context *ctx){
 }
 
 static int get_audio_frame(oarplayer *oar){
-//    LOGE("get_audio_frame....");
+    _LOGD("get_audio_frame....");
     oar_audio_player_context *ctx = oar->audio_player_ctx;
-    if(oar->status == IDEL/* || oar->status == PAUSED || oar->status == BUFFER_EMPTY*/){
-        LOGE("audio play state is not playing...");
+    if(oar->status == IDEL || oar->status == PAUSED || oar->status == BUFFER_EMPTY){
+        LOGI("audio play state is not playing...");
         return -1;
     }
-    LOGE("audio frame queue size:%d", oar->audio_frame_queue->count);
+    _LOGD("audio frame queue size:%d", oar->audio_frame_queue->count);
     oar->audio_frame = oar_frame_queue_get(oar->audio_frame_queue);
     // buffer empty ==> return -1
     // eos          ==> return -1
     if(oar->audio_frame == NULL){
-        //如果没有音频流,就从这里发送结束信号
-        if(oar->eof && !oar->metadata->has_audio || oar->just_audio){
-            oar->send_message(oar, oar_message_stop);
-        }
-        LOGE("oar_frame_queue_get is null...");
+        _LOGD("oar_frame_queue_get is null...");
         return -1;
     }
     ctx->frame_size = oar->audio_frame->size;
@@ -90,7 +87,6 @@ static int get_audio_frame(oarplayer *oar){
         memcpy(ctx->buffer, oar->audio_frame->data, (size_t)ctx->frame_size);
     }
 //    LOGE("release buffer : %d", oar->audio_frame->HW_BUFFER_ID);
-    free(oar->audio_frame->data);
     free(oar->audio_frame);
     oar->audio_frame = NULL;
     oar_clock_set(oar->audio_clock, time_stamp);
@@ -98,7 +94,7 @@ static int get_audio_frame(oarplayer *oar){
 }
 
 static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context){
-//    LOGE("bqPlayerCallback...");
+    _LOGD("bqPlayerCallback...");
     oarplayer *oar = context;
     oar_audio_player_context *ctx = oar->audio_player_ctx;
     pthread_mutex_lock(ctx->lock);
@@ -108,16 +104,19 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context){
         pthread_mutex_unlock(ctx->lock);
         return;
     }
-//    LOGE("buffer size : %d", ctx->frame_size);
+    _LOGD("buffer size : %d", ctx->frame_size);
     //for streaming playback, replace this test by logic to find and fill the next bufffer
     if(NULL != ctx->buffer && 0 != ctx->frame_size){
+        _LOGD("start enqueue...");
         SLresult result;
         //enqueue another buffer
         result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, ctx->buffer,
                                                  (SLuint32)ctx->frame_size);
         (*bqPlayerPlay)->GetPosition(bqPlayerPlay, &ctx->play_pos);
+        _LOGD("end enqueue...");
         (void)result;
     }
+    LOGD("end queue 2....");
     pthread_mutex_unlock(ctx->lock);
 }
 
@@ -125,6 +124,7 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context){
 void oar_audio_play(oarplayer *oar){
     SLresult result = 0;
     (*bqPlayerPlay)->GetPlayState(bqPlayerPlay, &result);
+    _LOGD("audio player status:%d", result);
     if(result == SL_PLAYSTATE_PAUSED){
         (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_PLAYING);
         bqPlayerCallback(bqPlayerBufferQueue, oar);
@@ -178,7 +178,7 @@ oar_audio_player_context* oar_audio_engine_create(){
 }
 void oar_audio_player_create(int rate, int channel, oarplayer* oar){
 
-    LOGE("oar_audio_player_create: rate = %d, channel = %d", rate, channel);
+    _LOGD("oar_audio_player_create: rate = %d, channel = %d", rate, channel);
     SLresult result;
 
     //configure audio source

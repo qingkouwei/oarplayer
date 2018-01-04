@@ -24,34 +24,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 void initTexture(oarplayer * oar) {
     oar_video_render_context * ctx = oar->video_render_ctx;
-    if(oar->is_sw_decode){
-        //软解数据可能会有Y/U/V三个通道的数据,或者Y/UV两个通道,所以初始化了三个纹理
-        glGenTextures(3, ctx->texture);
-        for(int i = 0; i < 3; i++){
-            glBindTexture(GL_TEXTURE_2D, ctx->texture[i]);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        }
-    }else{
-        //硬解的时候只需要创建一个surfacetexture即可
-        glGenTextures(1, &ctx->texture[3]);
-        glBindTexture(GL_TEXTURE_EXTERNAL_OES, ctx->texture[3]);
-        glTexParameterf(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameterf(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    }
+    glGenTextures(1, &ctx->texture[3]);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, ctx->texture[3]);
+    glTexParameterf(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 void oar_texture_delete(oarplayer * oar){
     oar_video_render_context * ctx = oar->video_render_ctx;
-    if(oar->is_sw_decode) {
-        glDeleteTextures(3, ctx->texture);
-    }else{
-        glDeleteTextures(1, &ctx->texture[3]);
-    }
+    glDeleteTextures(1, &ctx->texture[3]);
 }
 
 void update_texture_yuv420p(oar_model *model, OARFrame *frame){

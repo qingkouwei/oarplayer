@@ -20,15 +20,18 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+#define _JNILOG_TAG "audio_decode_thread"
+#include "_android.h"
 #include <unistd.h>
 #include <sys/prctl.h>
 #include <malloc.h>
 #include "oar_player_audio_hw_decode_thread.h"
 #include "oar_packet_queue.h"
 #include "oar_frame_queue.h"
-#define _JNILOG_TAG "audio_decode_thread"
-#include "_android.h"
 #include "oar_audio_mediacodec.h"
+
+#define isDebug 0
+#define _LOGD if(isDebug) LOGI
 
 void * audio_decode_thread(void * data){
     prctl(PR_SET_NAME, __func__);
@@ -44,7 +47,7 @@ void * audio_decode_thread(void * data){
         }
 
         ret = oar_audio_mediacodec_receive_frame(oar, &frame);
-//        LOGE("audio ret:%d",ret);
+        _LOGD("audio ret:%d",ret);
         if (ret == 0) {
             oar_frame_queue_put(oar->audio_frame_queue, frame);
             // 触发音频播放
@@ -52,18 +55,14 @@ void * audio_decode_thread(void * data){
                 oar->audio_player_ctx->play(oar);
             }
         } else if (ret == 1) {
-//            LOGI("start read audio...");
+//            _LOGD("start read audio...");
             packet = oar_packet_queue_get(oar->audio_packet_queue);
             // buffer empty ==> wait  10ms
             // eof          ==> break
             if(packet == NULL){
-                if(oar->eof){
-                    break;
-                }else{
-//                    LOGE("audio deocdec sleep...");
-                    usleep(BUFFER_EMPTY_SLEEP_US);
-                    continue;
-                }
+//              _LOGD("audio deocdec sleep...");
+                usleep(BUFFER_EMPTY_SLEEP_US);
+                continue;
             }
             ret = oar_audio_mediacodec_send_packet(oar, packet);
             if(ret == 0){

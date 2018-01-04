@@ -20,17 +20,16 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
+#define _JNILOG_TAG "glsl_program"
+#include "_android.h"
 #include <malloc.h>
 #include <string.h>
 #include "oar_glsl_program.h"
 #include "oar_texture.h"
 
-#define _JNILOG_TAG "glsl_program"
-#include "_android.h"
-
-
 #define STR(s) #s
+
+
 
 static int video_width = 0, video_height = 0;
 

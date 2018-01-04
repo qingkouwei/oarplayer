@@ -36,13 +36,14 @@ import java.nio.ByteOrder;
 
 public class HwAudioDecodeWrapper {
     private final static String TAG = "HwAudioDecodeWrapper";
+    private final static boolean isDebug = false;
     private static MediaCodec codec = null;
     private static MediaFormat format = null;
     public static void init(String codecName,
                             int sample_rate,
                             int channelCount,
                             ByteBuffer csd0){
-        Log.i(TAG, "init audio decodec: codecName = " + codecName);
+        if(isDebug) Log.i(TAG, "init audio decodec: codecName = " + codecName);
         try {
             codec = MediaCodec.createDecoderByType(codecName);
             format = new MediaFormat();
@@ -53,10 +54,10 @@ public class HwAudioDecodeWrapper {
             format.setByteBuffer("csd-0", csd0);
             codec.configure(format, null, null, 0);
             codec.start();
-            Log.i(TAG, "init audio decodec success...");
+            if(isDebug) Log.i(TAG, "init audio decodec success...");
         } catch (IOException e) {
             e.printStackTrace();
-            Log.e(TAG, "init audio decodec exception:" + e.getMessage());
+            if(isDebug) Log.e(TAG, "init audio decodec exception:" + e.getMessage());
         }
     }
 
@@ -81,7 +82,7 @@ public class HwAudioDecodeWrapper {
     }
 
     private static ByteBuffer bf = ByteBuffer.allocateDirect(20);
-    private static ByteBuffer bf2 = ByteBuffer.allocateDirect(12);
+    private static ByteBuffer bf2 = ByteBuffer.allocateDirect(8);
     static{
         bf.order(ByteOrder.BIG_ENDIAN);
         bf2.order(ByteOrder.BIG_ENDIAN);
@@ -90,7 +91,6 @@ public class HwAudioDecodeWrapper {
     public static ByteBuffer dequeueOutputBufferIndex(long timeout){
         try {
             int id = codec.dequeueOutputBuffer(output_buffer_info, timeout);
-//            Log.e(TAG, "dequeueOutputBuffer = " + id);
             bf.position(0);
             bf.putInt(id);
             if (id >= 0) {
@@ -99,17 +99,17 @@ public class HwAudioDecodeWrapper {
                 bf.putInt(output_buffer_info.size);
             }
         }catch (Exception e){
-//            Log.e(TAG, "exception:" + e.getMessage());
+            Log.e(TAG, "exception:" + e.getMessage());
         }
         return bf;
     }
 
     public static void releaseOutPutBuffer(int id){
-//        Log.e(TAG, "outputBuffer id: " + id);
+//        if(isDebug) Log.i(TAG, "outputBuffer id: " + id);
         try{
             codec.releaseOutputBuffer(id, false);
         }catch (Exception e){
-            System.out.println("catch exception when releaseOutPutBuffer  id==>" + id);
+            if(isDebug) Log.e(TAG,"catch exception when releaseOutPutBuffer  id==>" + id);
             e.printStackTrace();
         }
 
@@ -117,20 +117,17 @@ public class HwAudioDecodeWrapper {
 
     public static ByteBuffer formatChange(){
         MediaFormat newFormat = codec.getOutputFormat();
-//        Log.e(TAG, "format change:" + newFormat);
+//        if(isDebug) Log.i(TAG, "format change:" + newFormat);
         int sample_rate = newFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
         int channel_count = newFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        Log.e(TAG, "newFormat:" + newFormat);
-        //int pcm_encoding = newFormat.getInteger(MediaFormat.KEY_PCM_ENCODING);
+        if(isDebug)  Log.i(TAG, "newFormat:" + newFormat);
         bf2.position(0);
         bf2.putInt(sample_rate);
         bf2.putInt(channel_count);
-        bf2.putInt(1);
         return bf2;
     }
 
     public static ByteBuffer getOutputBuffer(int id){
-//        ByteBuffer ret = codec.getOutputBuffer(id);
         return codec.getOutputBuffers()[id];
     }
 

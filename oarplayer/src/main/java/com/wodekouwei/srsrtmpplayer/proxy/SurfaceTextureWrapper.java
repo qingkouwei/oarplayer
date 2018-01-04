@@ -28,19 +28,20 @@ import android.view.Surface;
 
 public class SurfaceTextureWrapper {
     private final static String TAG = "SurfaceTextureWrapper";
+    private final static boolean isDebug = false;
     private static SurfaceTexture texture;
     private static Surface surface;
     private static float[] matrix = new float[16];
 
     public static Surface getSurface(int name){
-        Log.i(TAG, "getSurface:" + name);
+        if(isDebug) Log.i(TAG, "getSurface:" + name);
         texture = new SurfaceTexture(name);
-        texture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
+        /*texture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
             @Override
             public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-//                Log.e(TAG, "onFrameAvailable....");
+                if(isDebug) Log.e(TAG, "onFrameAvailable....");
             }
-        });
+        });*/
         surface = new Surface(texture);
         HwVideoDecodeWrapper.setOutputSurface(surface);
         return surface;
