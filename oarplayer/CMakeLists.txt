@@ -5,11 +5,20 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
+set(lib_src_DIR ${CMAKE_SOURCE_DIR}/jni_lib_src/${ANDROID_ABI})
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+
+
+add_library(mediacodec SHARED IMPORTED)
+set_target_properties(mediacodec PROPERTIES IMPORTED_LOCATION ${lib_src_DIR}/libmediacodec-lib.so)
+
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
-
 add_library( # Sets the name of the library.
              oarp-lib
 
@@ -51,9 +60,7 @@ find_library(glesv2-lib GLESv2)
 find_library(egl-lib EGL)
 find_library(sles-lib OpenSLES)
 
-if (${CMAKE_SYSTEM_VERSION} MATCHES "21")
-    find_library(media-ndk mediandk)
-    target_link_libraries( # Specifies the target library.
+target_link_libraries( # Specifies the target library.
                        oarp-lib
 
                        # Links the target library to the log library
@@ -63,18 +70,4 @@ if (${CMAKE_SYSTEM_VERSION} MATCHES "21")
                        ${egl-lib}
                        ${glesv2-lib}
                        ${sles-lib}
-                       ${media-ndk}
                        )
-else (${CMAKE_SYSTEM_VERSION} LESS "21")
-    target_link_libraries( # Specifies the target library.
-                           oarp-lib
-
-                           # Links the target library to the log library
-                           # included in the NDK.
-                           ${log-lib}
-                           ${android-lib}
-                           ${egl-lib}
-                           ${glesv2-lib}
-                           ${sles-lib}
-                           )
-endif(${CMAKE_SYSTEM_VERSION} MATCHES "21")
