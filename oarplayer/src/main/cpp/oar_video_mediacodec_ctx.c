@@ -20,19 +20,28 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+//
+// Created by qingkouwei on 2018/1/5.
+//
 
-#ifndef __OAR_VIDEO_MEDIACODEC_H__
-#define __OAR_VIDEO_MEDIACODEC_H__
-
+#include <malloc.h>
 #include <string.h>
 #include <limits.h>
-#include "oarplayer_type_def.h"
-#include "endian.h"
-
+#include "oar_video_mediacodec_ctx.h"
+oar_video_mediacodec_context *oar_create_video_mediacodec_context(
+        oarplayer *oar) {
+    oar_video_mediacodec_context *ctx = (oar_video_mediacodec_context *) malloc(sizeof(oar_video_mediacodec_context));
+    ctx->width = oar->metadata->width;
+    ctx->height = oar->metadata->height;
+    ctx->codec_id = oar->metadata->video_codec;
+    ctx->nal_size = 0;
+    ctx->pix_format = PIX_FMT_NONE;
+    return ctx;
+}
 /* Inspired by libavcodec/hevc.c */
-static int convert_hevc_nal_units(const uint8_t *p_buf,size_t i_buf_size,
-                           uint8_t *p_out_buf,size_t i_out_buf_size,
-                           size_t *p_sps_pps_size,size_t *p_nal_size)
+int convert_hevc_nal_units(const uint8_t *p_buf,size_t i_buf_size,
+                                  uint8_t *p_out_buf,size_t i_out_buf_size,
+                                  size_t *p_sps_pps_size,size_t *p_nal_size)
 {
     int i, num_arrays;
     const uint8_t *p_end = p_buf + i_buf_size;
@@ -111,7 +120,7 @@ static int convert_hevc_nal_units(const uint8_t *p_buf,size_t i_buf_size,
 
     return 0;
 }
-static int convert_sps_pps2(const uint8_t *p_buf, size_t i_buf_size,
+int convert_sps_pps2(const uint8_t *p_buf, size_t i_buf_size,
                             uint8_t * out_sps_buf, size_t * out_sps_buf_size,
                             uint8_t * out_pps_buf, size_t * out_pps_buf_size,
 //                            uint8_t *p_out_buf, size_t i_out_buf_size,
@@ -158,7 +167,7 @@ static int convert_sps_pps2(const uint8_t *p_buf, size_t i_buf_size,
 
             if (i_data_size < i_nal_size) {
                 //LOGE("SPS size does not match NAL specified size %u",
-                 //    i_data_size);
+                //    i_data_size);
                 return -1;
             }
 //            if (i_sps_pps_size + 4 + i_nal_size > i_out_buf_size) {
@@ -198,12 +207,8 @@ static int convert_sps_pps2(const uint8_t *p_buf, size_t i_buf_size,
 
     return 0;
 }
-typedef struct H264ConvertState {
-    uint32_t nal_len;
-    uint32_t nal_pos;
-} H264ConvertState;
 
-static void convert_h264_to_annexb( uint8_t *p_buf, size_t i_len,
+void convert_h264_to_annexb( uint8_t *p_buf, size_t i_len,
                                     size_t i_nal_size,
                                     H264ConvertState *state )
 {
@@ -241,15 +246,3 @@ static void convert_h264_to_annexb( uint8_t *p_buf, size_t i_len,
         }
     }
 }
-
-oar_video_mediacodec_context * oar_create_video_mediacodec_context(
-        oarplayer *oar);
-void oar_video_mediacodec_release_buffer(oarplayer *oar, OARFrame *frame);
-int oar_video_mediacodec_receive_frame(oarplayer *oar, OARFrame *frame);
-int oar_video_mediacodec_send_packet(oarplayer *oar, OARPacket *packet);
-void oar_video_mediacodec_flush(oarplayer *oar);
-void oar_video_mediacodec_release_context(oarplayer *oar);
-void oar_video_mediacodec_start(oarplayer *oar);
-void oar_video_mediacodec_stop(oarplayer *oar);
-
-#endif //__OAR_VIDEO_MEDIACODEC_H__

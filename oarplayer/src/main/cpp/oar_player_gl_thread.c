@@ -33,7 +33,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "oar_frame_queue.h"
 #include "oar_glsl_program.h"
 #include "oar_texture.h"
-#include "oar_video_mediacodec.h"
+#include "oar_video_mediacodec_java.h"
 #include "oar_clock.h"
 
 #define isDebug 0
@@ -132,7 +132,7 @@ void change_model(oar_video_render_context *ctx) {
 }
 
 static inline void oar_player_release_video_frame(oarplayer *oar, OARFrame *frame) {
-    oar_video_mediacodec_release_buffer(oar, frame);
+    oar->video_mediacodec_ctx->oar_video_mediacodec_release_buffer(oar, frame->pkt_pos);
     free(oar->video_frame);
     oar->video_frame = NULL;
 }

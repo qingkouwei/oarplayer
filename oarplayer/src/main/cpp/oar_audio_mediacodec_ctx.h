@@ -20,22 +20,15 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-#ifndef __OAR_AUDIO_MEDIACODEC_H__
-#define __OAR_AUDIO_MEDIACODEC_H__
+//
+// Created by qingkouwei on 2018/1/5.
+//
 
-#include <string.h>
-#include <limits.h>
+#ifndef OARPLAYER_OAR_AUDIO_MEDIACODEC_CTX_H
+#define OARPLAYER_OAR_AUDIO_MEDIACODEC_CTX_H
+
 #include "oarplayer_type_def.h"
-#include "endian.h"
 
 oar_audio_mediacodec_context * oar_create_audio_mediacodec_context(
         oarplayer *oar);
-void oar_audio_mediacodec_release_buffer(oarplayer *oar, int index);
-int oar_audio_mediacodec_receive_frame(oarplayer *oar, OARFrame **frame);
-int oar_audio_mediacodec_send_packet(oarplayer *oar, OARPacket *packet);
-void oar_audio_mediacodec_flush(oarplayer *oar);
-void oar_audio_mediacodec_release_context(oarplayer *oar);
-void oar_audio_mediacodec_start(oarplayer *oar);
-void oar_audio_mediacodec_stop(oarplayer *oar);
-
-#endif //__OAR_AUDIO_MEDIACODEC_H__
+#endif //OARPLAYER_OAR_AUDIO_MEDIACODEC_CTX_H

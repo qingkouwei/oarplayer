@@ -35,8 +35,8 @@ add_library( # Sets the name of the library.
              src/main/cpp/oar_frame_queue.c
              src/main/cpp/oar_player.c
              src/main/cpp/oar_jni_reflect.c
-             src/main/cpp/oar_video_mediacodec.c
-             src/main/cpp/oar_audio_mediacodec.c
+             src/main/cpp/oar_video_mediacodec_java.c
+             src/main/cpp/oar_audio_mediacodec_java.c
              src/main/cpp/oar_player_video_hw_decode_thread.c
              src/main/cpp/oar_player_audio_hw_decode_thread.c
              src/main/cpp/oar_video_render.c
@@ -46,6 +46,9 @@ add_library( # Sets the name of the library.
              src/main/cpp/oar_audio_player.c
              src/main/cpp/util.c
              src/main/cpp/oar_audio_mediacodec_ndk.c
+             src/main/cpp/oar_video_mediacodec_ndk.c
+             src/main/cpp/oar_audio_mediacodec_ctx.c
+             src/main/cpp/oar_video_mediacodec_ctx.c
              )
 
 

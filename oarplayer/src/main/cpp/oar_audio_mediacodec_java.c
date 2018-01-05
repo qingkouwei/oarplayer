@@ -24,21 +24,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "_android.h"
 #include <unistd.h>
 #include <malloc.h>
-#include "oar_audio_mediacodec.h"
+#include "oar_audio_mediacodec_java.h"
 #include "util.h"
 
 #define isDebug 0
 #define _LOGD if(isDebug) LOGI
-
-oar_audio_mediacodec_context *oar_create_audio_mediacodec_context(
-        oarplayer *oar) {
-    oar_audio_mediacodec_context *ctx = (oar_audio_mediacodec_context *) malloc(sizeof(oar_audio_mediacodec_context));
-    ctx->channel_count = oar->metadata->channels;
-    ctx->sample_rate = oar->metadata->sample_rate;
-    ctx->codec_id = oar->metadata->audio_codec;
-    return ctx;
-}
-
 
 void oar_audio_mediacodec_start(oarplayer *oar){
     _LOGD("oar_audio_mediacodec_start...");

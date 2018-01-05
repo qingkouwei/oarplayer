@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/prctl.h>
 #include <malloc.h>
 #include "oar_player_video_hw_decode_thread.h"
-#include "oar_video_mediacodec.h"
+#include "oar_video_mediacodec_java.h"
 #include "oar_packet_queue.h"
 #include "oar_frame_queue.h"
 
@@ -42,7 +42,7 @@ static inline int drop_video_packet(oarplayer * oar){
             usleep((useconds_t) diff);
         }
         freePacket(packet);
-        oar_video_mediacodec_flush(oar);
+        oar->video_mediacodec_ctx->oar_video_mediacodec_flush(oar);
 
     }else{
         usleep(NULL_LOOP_SLEEP_US);
@@ -55,7 +55,7 @@ void* video_decode_hw_thread(void * data){
     oarplayer * oar = (oarplayer *)data;
     _LOGD("vm = %p, thread id = %d ,api = %d", oar->vm,gettid(),__ANDROID_API__);
     (*(oar->vm))->AttachCurrentThread(oar->vm, &oar->video_mediacodec_ctx->jniEnv, NULL);
-    oar_video_mediacodec_start(oar);
+    oar->video_mediacodec_ctx->oar_video_mediacodec_start(oar);
     int ret;
     OARPacket * packet = NULL;
     OARFrame * frame = (OARFrame*)malloc(sizeof(OARFrame));//TODO
@@ -64,7 +64,7 @@ void* video_decode_hw_thread(void * data){
             // 如果只播放音频  按照音视频同步的速度丢包
             drop_video_packet(oar);
         }else{
-            ret = oar_video_mediacodec_receive_frame(oar, frame);
+            ret = oar->video_mediacodec_ctx->oar_video_mediacodec_receive_frame(oar, frame);
             _LOGD("video ret:%d", ret);
             if (ret == 0) {
                 frame->FRAME_ROTATION = oar->frame_rotation;
@@ -83,7 +83,7 @@ void* video_decode_hw_thread(void * data){
                     usleep(BUFFER_EMPTY_SLEEP_US);
                     continue;
                 }
-                if(0 == oar_video_mediacodec_send_packet(oar, packet)){
+                if(0 == oar->video_mediacodec_ctx->oar_video_mediacodec_send_packet(oar, packet)){
                     _LOGD("send packet success...");
                     freePacket(packet);
                     packet = NULL;
@@ -106,7 +106,7 @@ void* video_decode_hw_thread(void * data){
             }
         }
     }
-    oar_video_mediacodec_stop(oar);
+    oar->video_mediacodec_ctx->oar_video_mediacodec_stop(oar);
     (*oar->vm)->DetachCurrentThread(oar->vm);
     LOGI("thread ==> %s exit", __func__);
     return NULL;

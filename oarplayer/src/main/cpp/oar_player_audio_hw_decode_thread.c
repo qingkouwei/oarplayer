@@ -28,7 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "oar_player_audio_hw_decode_thread.h"
 #include "oar_packet_queue.h"
 #include "oar_frame_queue.h"
-#include "oar_audio_mediacodec.h"
+#include "oar_audio_mediacodec_java.h"
 
 #define isDebug 0
 #define _LOGD if(isDebug) LOGI

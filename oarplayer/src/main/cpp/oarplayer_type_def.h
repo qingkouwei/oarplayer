@@ -301,6 +301,15 @@ typedef struct oar_video_mediacodec_context {
     int width, height;
     OARPixelFormat pix_format;
     VideoCodecID codec_id;
+    void *AFormat;
+    void *ACodec;
+    void (*oar_video_mediacodec_release_buffer)(struct oarplayer *oar, int index);
+    int (*oar_video_mediacodec_receive_frame)(struct oarplayer *oar, OARFrame **frame);
+    int (*oar_video_mediacodec_send_packet)(struct oarplayer *oar, OARPacket *packet);
+    void (*oar_video_mediacodec_flush)(struct oarplayer *oar);
+    void (*oar_video_mediacodec_release_context)(struct oarplayer *oar);
+    void (*oar_video_mediacodec_start)(struct oarplayer *oar);
+    void (*oar_video_mediacodec_stop)(struct oarplayer *oar);
 } oar_video_mediacodec_context;
 typedef struct oar_audio_mediacodec_context {
     JNIEnv *jniEnv;
@@ -309,7 +318,7 @@ typedef struct oar_audio_mediacodec_context {
     AudioCodecID codec_id;
     void *AFormat;
     void *ACodec;
-    void (*oar_audio_mediacodec_release_buffer_ndk)(struct oarplayer *oar, int index);
+    void (*oar_audio_mediacodec_release_buffer)(struct oarplayer *oar, int index);
     int (*oar_audio_mediacodec_receive_frame)(struct oarplayer *oar, OARFrame **frame);
     int (*oar_audio_mediacodec_send_packet)(struct oarplayer *oar, OARPacket *packet);
     void (*oar_audio_mediacodec_flush)(struct oarplayer *oar);

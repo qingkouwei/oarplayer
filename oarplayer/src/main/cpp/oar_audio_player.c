@@ -31,7 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <pthread.h>
 #include <malloc.h>
 #include <string.h>
-#include "oar_audio_mediacodec.h"
+#include "oar_audio_mediacodec_java.h"
 
 #define isDebug 1
 #define _LOGD if(isDebug) LOGI

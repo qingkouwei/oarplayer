@@ -25,23 +25,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <unistd.h>
 #include <malloc.h>
-#include "oar_video_mediacodec.h"
+#include "oar_video_mediacodec_java.h"
 #include "oarplayer_type_def.h"
 #include "util.h"
+#include "oar_video_mediacodec_ctx.h"
 
 #define _LOGD if(isDebug) LOGD
 
-
-oar_video_mediacodec_context *oar_create_video_mediacodec_context(
-        oarplayer *oar) {
-    oar_video_mediacodec_context *ctx = (oar_video_mediacodec_context *) malloc(sizeof(oar_video_mediacodec_context));
-    ctx->width = oar->metadata->width;
-    ctx->height = oar->metadata->height;
-    ctx->codec_id = oar->metadata->video_codec;
-    ctx->nal_size = 0;
-    ctx->pix_format = PIX_FMT_NONE;
-    return ctx;
-}
 
 void oar_video_mediacodec_start(oarplayer *oar){
     _LOGD("oar_video_mediacodec_start...");
@@ -96,11 +86,11 @@ void oar_video_mediacodec_start(oarplayer *oar){
     }
 }
 
-void oar_video_mediacodec_release_buffer(oarplayer *oar, OARFrame *frame) {
+void oar_video_mediacodec_release_buffer(oarplayer *oar, int index) {
     JNIEnv *jniEnv = oar->video_render_ctx->jniEnv;
     oar_java_class * jc = oar->jc;
     (*jniEnv)->CallStaticVoidMethod(jniEnv, jc->HwDecodeBridge, jc->codec_releaseOutPutBuffer,
-                                    (int)frame->HW_BUFFER_ID);
+                                    index);
 }
 
 int oar_video_mediacodec_receive_frame(oarplayer *oar, OARFrame *frame) {

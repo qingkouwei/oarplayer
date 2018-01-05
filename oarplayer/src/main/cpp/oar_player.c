@@ -32,13 +32,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srs_readthread.h"
 #include "oar_video_render.h"
 #include "oar_player_video_hw_decode_thread.h"
-#include "oar_video_mediacodec.h"
+#include "oar_video_mediacodec_java.h"
 #include "oar_player_gl_thread.h"
 #include "oar_frame_queue.h"
 #include "oar_player_audio_hw_decode_thread.h"
 #include "oar_audio_player.h"
-#include "oar_audio_mediacodec.h"
+#include "oar_audio_mediacodec_java.h"
 #include "oar_audio_mediacodec_ndk.h"
+#include "oar_video_mediacodec_ctx.h"
+#include "oar_audio_mediacodec_ctx.h"
+#include "oar_video_mediacodec_ndk.h"
 
 #define isDebug 1
 #define _LOGD if(isDebug) LOGI
@@ -305,7 +308,7 @@ static int stop(oarplayer *oar) {
     pthread_join(oar->read_stream_thread, &thread_res);
     if (oar->metadata->has_video) {
         pthread_join(oar->video_decode_thread, &thread_res);
-        oar_video_mediacodec_release_context(oar);
+        oar->video_mediacodec_ctx->oar_video_mediacodec_release_context(oar);
         pthread_join(oar->gl_thread, &thread_res);
     }
 
@@ -385,6 +388,24 @@ static void on_error(oarplayer *pd) {
 }
 static int hw_codec_init(oarplayer *oar) {
     oar->video_mediacodec_ctx = oar_create_video_mediacodec_context(oar);
+    if(oar->dl_context){
+        oar->video_mediacodec_ctx->oar_video_mediacodec_receive_frame = oar_video_mediacodec_receive_frame_ndk;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_release_buffer = oar_video_mediacodec_release_buffer_ndk;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_send_packet = oar_video_mediacodec_send_packet_ndk;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_flush = oar_video_mediacodec_flush_ndk;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_release_context = oar_video_mediacodec_release_context_ndk;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_start = oar_video_mediacodec_start_ndk;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_stop = oar_video_mediacodec_stop_ndk;
+        oar_create_video_mediacodec_ndk(oar);
+    }else{
+        oar->video_mediacodec_ctx->oar_video_mediacodec_receive_frame = oar_video_mediacodec_receive_frame;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_release_buffer = oar_video_mediacodec_release_buffer;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_send_packet = oar_video_mediacodec_send_packet;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_flush = oar_video_mediacodec_flush;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_release_context = oar_video_mediacodec_release_context;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_start = oar_video_mediacodec_start;
+        oar->video_mediacodec_ctx->oar_video_mediacodec_stop = oar_video_mediacodec_stop;
+    }
     return 0;
 }
 static int audio_codec_init(oarplayer *oar) {
@@ -392,7 +413,7 @@ static int audio_codec_init(oarplayer *oar) {
     oar->audio_mediacodec_ctx = oar_create_audio_mediacodec_context(oar);
     if(oar->dl_context){
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_receive_frame = oar_audio_mediacodec_receive_frame_ndk;
-        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_buffer_ndk;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_buffer = oar_audio_mediacodec_release_buffer_ndk;
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_send_packet = oar_audio_mediacodec_send_packet_ndk;
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_flush = oar_audio_mediacodec_flush_ndk;
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_context_ndk;
@@ -401,7 +422,7 @@ static int audio_codec_init(oarplayer *oar) {
         oar_create_audio_mediacodec_ndk(oar);
     }else{
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_receive_frame = oar_audio_mediacodec_receive_frame;
-        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_buffer;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_buffer = oar_audio_mediacodec_release_buffer;
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_send_packet = oar_audio_mediacodec_send_packet;
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_flush = oar_audio_mediacodec_flush;
         oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_context;
