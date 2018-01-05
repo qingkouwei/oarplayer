@@ -1,62 +1,36 @@
 package com.wodekouwei.demo;
 
-import android.support.v7.app.AppCompatActivity;
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
-
-import com.wodekouwei.srsrtmpplayer.OARPlayer;
-
-import java.io.IOException;
+import android.widget.EditText;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
 
-    Button btn;
-    private SurfaceView surfaceView;
-    OARPlayer player;
+    private Button btn;
+    private EditText et;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btn = (Button)findViewById(R.id.btn);
-        player = new OARPlayer();
-        surfaceView = (SurfaceView)findViewById(R.id.surfaceview);
-        surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder surfaceHolder) {
-
-            }
-
-            @Override
-            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-
-            }
-
-            @Override
-            public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-
-            }
-        });
+        et = (EditText)findViewById(R.id.et);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                try {
-//                    player.setDataSource("rtmp://192.168.31.34/live/aaaaa");
-                    player.setDataSource("rtmp://192.168.0.49/live/aaaaa");
-                    player.setSurface(surfaceView.getHolder().getSurface());
-                    player.start();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                String rtmpUrl = et.getText().toString();
+                if(TextUtils.isEmpty(rtmpUrl)){
+                    Toast.makeText(MainActivity.this, "请输入播放地址", Toast.LENGTH_SHORT).show();
+                }else{
+                    Intent intent = new Intent(MainActivity.this, PlayerAty.class);
+                    intent.putExtra("rtmp_url", rtmpUrl);
+                    startActivity(intent);
                 }
-                /*new Thread(){
-                    @Override
-                    public void run() {
-                    }
-                }.start();*/
-
             }
         });
     }

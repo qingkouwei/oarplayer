@@ -4,17 +4,25 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.wodekouwei.demo.MainActivity"
-    >
-    <SurfaceView
-        android:id="@+id/surfaceview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    tools:context="com.wodekouwei.demo.MainActivity">
     <Button
         android:id="@+id/btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="10dip"
         android:layout_margin="10dip"
-        android:text="点击" />
+        android:text="播放"
+        android:layout_alignParentRight="true"
+        />
+    <EditText
+        android:id="@+id/et"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="请输入rtmp播放地址"
+        android:layout_toLeftOf="@id/btn"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="10dip"
+        />
+
+
 </RelativeLayout>
