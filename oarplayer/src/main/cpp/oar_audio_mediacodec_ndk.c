@@ -21,7 +21,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 //
-// Created by 申俊伟 on 2018/1/4.
+// Created by qingkouwei on 2018/1/4.
 //
 #define _JNILOG_TAG "oar_audio_mediacodec"
 #include "_android.h"
@@ -105,5 +105,5 @@ void oar_audio_mediacodec_start_ndk(oarplayer *oar){
     oar->dl_context->native_mediacodec_start(oar->audio_mediacodec_ctx->ACodec, oar->audio_mediacodec_ctx->AFormat, NULL);
 }
 void oar_audio_mediacodec_stop_ndk(oarplayer *oar){
-    oar->dl_context->native_mediacodec_stop(oar->audio_mediacodec_ctx);
+    oar->dl_context->native_mediacodec_stop(oar->audio_mediacodec_ctx->ACodec);
 }

@@ -21,7 +21,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 //
-// Created by 申俊伟 on 2018/1/5.
+// Created by qingkouwei on 2018/1/5.
 //
 
 #define _JNILOG_TAG "oar_video_mediacodec_ndk"
@@ -127,6 +127,6 @@ void oar_video_mediacodec_start_ndk(oarplayer *oar){
                                              oar->video_render_ctx->texture_window);
 }
 void oar_video_mediacodec_stop_ndk(oarplayer *oar){
-    oar->dl_context->native_mediacodec_stop(oar->video_mediacodec_ctx);
+    oar->dl_context->native_mediacodec_stop(oar->video_mediacodec_ctx->ACodec);
 }
 

@@ -33,7 +33,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include "oar_audio_mediacodec_java.h"
 
-#define isDebug 1
+#define isDebug 0
 #define _LOGD if(isDebug) LOGI
 
 //engine interface
@@ -116,7 +116,7 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context){
         _LOGD("end enqueue...");
         (void)result;
     }
-    LOGD("end queue 2....");
+    _LOGD("end queue 2....");
     pthread_mutex_unlock(ctx->lock);
 }
 

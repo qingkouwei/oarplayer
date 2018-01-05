@@ -36,11 +36,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "oar_player.h"
 
 
-/**
- * Error:(35133, 43) error:
- * invalid suffix on literal; C++11 requires a space between literal and identifier [-Wreserved-user-defined-literal]
- */
-
 #define JNI_CLASS_OARPLAYER     "com/wodekouwei/srsrtmpplayer/OARPlayer"
 #ifndef NELEM
 #define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
