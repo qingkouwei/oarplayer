@@ -22,10 +22,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 package com.wodekouwei.srsrtmpplayer;
 
+import android.content.Context;
 import android.os.Build;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 
 import java.io.IOException;
 
@@ -41,6 +43,7 @@ public class OARPlayer {
     private boolean mStayAwake;
 
     private String mDataSource;
+    private SurfaceHolder mSurfaceHolder;
 
     private static volatile boolean mIsNativeInitialized = false;
     private void initNativeOnce() {
@@ -88,12 +91,14 @@ public class OARPlayer {
     private native void _stop() throws IllegalStateException;
 
     public void release(){
+        stayAwake(false);
         _release();
     }
     private native void _release();
 
-    public void setSurface(Surface surface){
-        _setVideoSurface(surface);
+    public void setSurface(SurfaceHolder holder){
+        mSurfaceHolder = holder;
+        _setVideoSurface(holder.getSurface());
     }
     /*
      * Update the IjkMediaPlayer SurfaceTexture. Call after setting a new
@@ -106,6 +111,36 @@ public class OARPlayer {
     }
     private native float _getCurrentTime();
 
+    public void setWakeMode(Context context, int mode) {
+        boolean washeld = false;
+        if (mWakeLock != null) {
+            if (mWakeLock.isHeld()) {
+                washeld = true;
+                mWakeLock.release();
+            }
+            mWakeLock = null;
+        }
+
+        PowerManager pm = (PowerManager) context
+                .getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(mode | PowerManager.ON_AFTER_RELEASE,
+                OARPlayer.class.getName());
+        mWakeLock.setReferenceCounted(false);
+        if (washeld) {
+            mWakeLock.acquire();
+        }
+    }
+    public void setScreenOnWhilePlaying(boolean screenOn) {
+        if (mScreenOnWhilePlaying != screenOn) {
+            if (screenOn && mSurfaceHolder == null) {
+                Log.w(TAG,
+                        "setScreenOnWhilePlaying(true) is ineffective without a SurfaceHolder");
+            }
+            mScreenOnWhilePlaying = screenOn;
+            updateSurfaceScreenOn();
+        }
+    }
+
     private void stayAwake(boolean awake) {
         if (mWakeLock != null) {
             if (awake && !mWakeLock.isHeld()) {
@@ -117,10 +152,11 @@ public class OARPlayer {
         mStayAwake = awake;
         updateSurfaceScreenOn();
     }
+
     private void updateSurfaceScreenOn() {
-        /*if (mSurfaceHolder != null) {
+        if (mSurfaceHolder != null) {
             mSurfaceHolder.setKeepScreenOn(mScreenOnWhilePlaying && mStayAwake);
-        }*/
+        }
     }
 
     @SuppressWarnings("unused")
