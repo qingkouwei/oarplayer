@@ -76,6 +76,33 @@ typedef struct oar_java_class {
     jmethodID texture_release;
 
 } oar_java_class;
+typedef struct oar_dl_context{
+    void *libHandler;
+    int (*native_mediacodec_send_packet)(void * codec,
+                                          int len,
+                                          int type,
+                                          int64_t dts,
+                                          int64_t pts,
+                                          int isKeyframe,
+                                          uint8_t *data);
+    void (*native_mediacodec_release_buffer)(void * codec, int bufferID, bool render);
+    int (*native_mediacodec_receive_frame)(void * codec,
+                                           void **frame,
+                                           void * oar,
+                                           int type,
+                                            void *(frameGenerate)(void *, void**, void*, int, int64_t,ssize_t,int, int, int));
+    void (*native_mediacodec_flush)(void * codec);
+    void *(*create_native_mediacodec)(int codec_id,
+                                               int width, int height,
+                                               int sample_rate, int channelCount,
+                                               uint8_t *sps, int sps_size,
+                                               uint8_t *pps, int pps_size,
+                                              void *ctx,
+                                               void (*formatCreated(void*, void*)));
+    int (*native_mediacodec_start)(void * codec, void *format, void *window);
+    void (*native_mediacodec_stop)(void * codec);
+    void (*native_mediacodec_release_context)(void * codec, void *format);
+} oar_dl_context;
 typedef enum{
     PIX_FMT_NONE = -1,
     PIX_FMT_YUV420P,
@@ -280,6 +307,15 @@ typedef struct oar_audio_mediacodec_context {
     int channel_count;
     int sample_rate;
     AudioCodecID codec_id;
+    void *AFormat;
+    void *ACodec;
+    void (*oar_audio_mediacodec_release_buffer_ndk)(struct oarplayer *oar, int index);
+    int (*oar_audio_mediacodec_receive_frame)(struct oarplayer *oar, OARFrame **frame);
+    int (*oar_audio_mediacodec_send_packet)(struct oarplayer *oar, OARPacket *packet);
+    void (*oar_audio_mediacodec_flush)(struct oarplayer *oar);
+    void (*oar_audio_mediacodec_release_context)(struct oarplayer *oar);
+    void (*oar_audio_mediacodec_start)(struct oarplayer *oar);
+    void (*oar_audio_mediacodec_stop)(struct oarplayer *oar);
 } oar_audio_mediacodec_context;
 
 typedef struct oar_audio_player_context {
@@ -319,6 +355,8 @@ typedef struct oarplayer {
     PlayStatus status;
 
     oar_metadata_t *metadata;
+    oar_dl_context *dl_context;
+
 
     // 各个thread
     pthread_t read_stream_thread;

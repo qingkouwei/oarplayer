@@ -23,8 +23,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // Created by qingkouwei on 2018/1/4.
 //
-
-#include "oar_native_video_mediacodec.h"
+#define _JNILOG_TAG "native_mediacodec"
+#include "_android.h"
+#include "oar_native_mediacodec.h"
 #include <media/NdkMediaCodec.h>
 #include <string.h>
 
@@ -75,24 +76,42 @@ void oar_native_mediacodec_release_buffer(void * codec, int bufferID, bool rende
 }
 
 int oar_native_mediacodec_receive_frame(void * codec,
-                                       void *(frameGenerate)(int64_t,ssize_t,int, int, int)) {
+                                        void **frame,
+                                        void *oar,
+                                        int type,
+                                       void *(frameGenerate)(void *,void *, void**, int, int64_t,ssize_t,int, int, int)) {
     AMediaCodec *c = (AMediaCodec *)codec;
     AMediaCodecBufferInfo info;
     int output_ret = 1;
     ssize_t outbufidx = AMediaCodec_dequeueOutputBuffer(c, &info, 0);
     if (outbufidx >= 0) {
-        frameGenerate(info.presentationTimeUs, outbufidx, 0, 0, 2);
+        if(type == 0){//video
+            frameGenerate(oar, frame, NULL,  0, info.presentationTimeUs, outbufidx, -1, -1, 2);
+        }else{
+            int size = 0;
+            uint8_t *data = AMediaCodec_getOutputBuffer(c, outbufidx, &size);
+//            LOGE("index : %d, size:%d, info.size : %d, offset: %d", outbufidx, size, info.size, info.offset);
+            frameGenerate(oar, frame, data, info.size, info.presentationTimeUs, outbufidx, -1, -1, -1);
+            AMediaCodec_releaseOutputBuffer(c,outbufidx, false);
+        }
         output_ret = 0;
     } else {
         switch (outbufidx) {
             case AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED: {
-                int pix_format = -1;
-                int width =0, height =0;
                 AMediaFormat *format = AMediaCodec_getOutputFormat(c);
-                AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_WIDTH, &width);
-                AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_HEIGHT, &height);
-                AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, &pix_format);
-                frameGenerate(0, AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED, width, height, pix_format);
+                if(type == 0){
+                    int pix_format = -1;
+                    int width =0, height =0;
+                    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_WIDTH, &width);
+                    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_HEIGHT, &height);
+                    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, &pix_format);
+                    frameGenerate(oar, frame, NULL, 0, 0, AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED, width, height, pix_format);
+                }else{
+                    int sample_rate =0, channel_count =0;
+                    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, &sample_rate);
+                    AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &channel_count);
+                    frameGenerate(oar,frame, NULL, 0, 0, AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED, sample_rate, channel_count, -1);
+                }
                 output_ret = -2;
                 break;
             }
@@ -113,12 +132,15 @@ void oar_native_mediacodec_flush(void * codec) {
     AMediaCodec_flush(c);
 }
 
-void *oar_create_native_mediacodec_context(int codec_id,
+void *oar_create_native_mediacodec(int codec_id,
                                           int width, int height,
                                           int sample_rate, int channelCount,
-                                          uint8_t sps, int sps_size,
-                                          uint8_t pps, int pps_size,
-                                          void (*formatCreated(void*))) {
+                                          uint8_t *sps, int sps_size,
+                                          uint8_t *pps, int pps_size,
+                                           void *ctx,
+                                          void (*formatCreated(void*, void*))) {
+    /*LOGE("codecid:%d, width:%d, height:%d, samplerate:%d, channelCount:%d, sps_size:%d", codec_id,
+    width, height, sample_rate, channelCount, sps_size);*/
     AMediaCodec *codec = NULL;
     AMediaFormat *format = AMediaFormat_new();
 //    "video/x-vnd.on2.vp8" - VP8 video (i.e. video in .webm)
@@ -157,7 +179,7 @@ void *oar_create_native_mediacodec_context(int codec_id,
             break;
     }
 
-    formatCreated(format);
+    formatCreated(ctx, format);
     return codec;
 }
 

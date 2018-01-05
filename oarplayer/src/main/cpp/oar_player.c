@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "_android.h"
 #include <malloc.h>
 #include <unistd.h>
+#include <dlfcn.h>
 #include "oar_player.h"
 #include "oar_clock.h"
 #include "oar_jni_reflect.h"
@@ -37,6 +38,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "oar_player_audio_hw_decode_thread.h"
 #include "oar_audio_player.h"
 #include "oar_audio_mediacodec.h"
+#include "oar_audio_mediacodec_ndk.h"
+
+#define isDebug 1
+#define _LOGD if(isDebug) LOGI
 
 static int stop(oarplayer *oar);
 
@@ -127,6 +132,46 @@ static inline void set_buffer_time(oarplayer *pd) {
     }
 }
 
+static oar_dl_context *create_dl_context()
+{
+    oar_dl_context *dl_context = (oar_dl_context *)malloc(sizeof(oar_dl_context));
+    dl_context->libHandler = dlopen("./libmediacodec-lib.so", RTLD_NOW);
+    if (!dl_context->libHandler) {
+        LOGE("!!!!!!!! failed to load library: %s");
+        return NULL;
+    }
+
+    dl_context->create_native_mediacodec = dlsym(dl_context->libHandler, "oar_create_native_mediacodec");
+    dl_context->native_mediacodec_flush = dlsym(dl_context->libHandler, "oar_native_mediacodec_flush");
+    dl_context->native_mediacodec_receive_frame = dlsym(dl_context->libHandler, "oar_native_mediacodec_receive_frame");
+    dl_context->native_mediacodec_release_buffer = dlsym(dl_context->libHandler, "oar_native_mediacodec_release_buffer");
+    dl_context->native_mediacodec_release_context = dlsym(dl_context->libHandler, "oar_native_mediacodec_release_context");
+    dl_context->native_mediacodec_send_packet = dlsym(dl_context->libHandler, "oar_native_mediacodec_send_packet");
+    dl_context->native_mediacodec_start = dlsym(dl_context->libHandler, "oar_native_mediacodec_start");
+    dl_context->native_mediacodec_stop = dlsym(dl_context->libHandler, "oar_native_mediacodec_stop");
+    return dl_context;
+}
+
+static void release_dl_context(oarplayer *oar)
+{
+    if(oar->dl_context ==NULL){
+        return;
+    }
+    oar->dl_context->create_native_mediacodec = NULL;
+    oar->dl_context->native_mediacodec_flush = NULL;
+    oar->dl_context->native_mediacodec_receive_frame = NULL;
+    oar->dl_context->native_mediacodec_release_buffer = NULL;
+    oar->dl_context->native_mediacodec_release_context = NULL;
+    oar->dl_context->native_mediacodec_send_packet = NULL;
+    oar->dl_context->native_mediacodec_start = NULL;
+    oar->dl_context->native_mediacodec_stop = NULL;
+    if (oar->dl_context->libHandler != NULL) {
+        dlclose (oar->dl_context->libHandler);
+    }
+    free(oar->dl_context);
+    oar->dl_context= NULL;
+}
+
 oarplayer *
 oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int best_samplerate){
     oarplayer *oar = (oarplayer *)malloc(sizeof(oarplayer));
@@ -148,6 +193,13 @@ oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int be
     oar->metadata->has_video = 0;
     oar->metadata->video_extradata = NULL;
     oar->metadata->audio_pps = NULL;
+
+    if(run_android_version >= NDK_MEDIACODEC_VERSION){
+        _LOGD("create dl context");
+        oar->dl_context = create_dl_context();
+    }else{
+        oar->dl_context = NULL;
+    }
 
     oar->audio_packet_queue = oar_queue_create();
     oar->video_packet_queue = oar_queue_create();
@@ -259,6 +311,7 @@ static int stop(oarplayer *oar) {
 
     if (oar->metadata->has_audio) {
         pthread_join(oar->audio_decode_thread, &thread_res);
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context(oar->audio_mediacodec_ctx->ACodec);
         oar->audio_player_ctx->shutdown();
     }
 
@@ -301,7 +354,9 @@ int oar_player_release(oarplayer *oar){
         free(oar->metadata);
         oar->metadata = NULL;
     }
-
+    if(oar->dl_context ){
+        release_dl_context(oar);
+    }
     (*oar->jniEnv)->DeleteGlobalRef(oar->jniEnv, oar->oarPlayer);
     oar_jni_free(&oar->jc, oar->jniEnv);
     free(oar);
@@ -335,6 +390,24 @@ static int hw_codec_init(oarplayer *oar) {
 static int audio_codec_init(oarplayer *oar) {
 
     oar->audio_mediacodec_ctx = oar_create_audio_mediacodec_context(oar);
+    if(oar->dl_context){
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_receive_frame = oar_audio_mediacodec_receive_frame_ndk;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_buffer_ndk;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_send_packet = oar_audio_mediacodec_send_packet_ndk;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_flush = oar_audio_mediacodec_flush_ndk;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_context_ndk;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_start = oar_audio_mediacodec_start_ndk;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_stop = oar_audio_mediacodec_stop_ndk;
+        oar_create_audio_mediacodec_ndk(oar);
+    }else{
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_receive_frame = oar_audio_mediacodec_receive_frame;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_buffer;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_send_packet = oar_audio_mediacodec_send_packet;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_flush = oar_audio_mediacodec_flush;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context = oar_audio_mediacodec_release_context;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_start = oar_audio_mediacodec_start;
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_stop = oar_audio_mediacodec_stop;
+    }
     // Android openSL ES   can not support more than 2 channels.
     // flv acc sample_rate is constant 3(44100)
     oar->audio_player_ctx->player_create(oar->metadata->sample_rate, oar->metadata->channels, oar);

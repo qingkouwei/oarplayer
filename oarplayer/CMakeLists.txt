@@ -45,6 +45,7 @@ add_library( # Sets the name of the library.
              src/main/cpp/oar_player_gl_thread.c
              src/main/cpp/oar_audio_player.c
              src/main/cpp/util.c
+             src/main/cpp/oar_audio_mediacodec_ndk.c
              )
 
 

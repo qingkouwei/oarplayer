@@ -37,7 +37,7 @@ void * audio_decode_thread(void * data){
     prctl(PR_SET_NAME, __func__);
     oarplayer * oar = (oarplayer *)data;
     (*(oar->vm))->AttachCurrentThread(oar->vm, &oar->audio_mediacodec_ctx->jniEnv, NULL);
-    oar_audio_mediacodec_start(oar);
+    oar->audio_mediacodec_ctx->oar_audio_mediacodec_start(oar);
     int ret;
     OARPacket * packet = NULL;
     OARFrame *frame;
@@ -46,7 +46,7 @@ void * audio_decode_thread(void * data){
             usleep(NULL_LOOP_SLEEP_US);
         }
 
-        ret = oar_audio_mediacodec_receive_frame(oar, &frame);
+        ret = oar->audio_mediacodec_ctx->oar_audio_mediacodec_receive_frame(oar, &frame);
         _LOGD("audio ret:%d",ret);
         if (ret == 0) {
             oar_frame_queue_put(oar->audio_frame_queue, frame);
@@ -64,7 +64,7 @@ void * audio_decode_thread(void * data){
                 usleep(BUFFER_EMPTY_SLEEP_US);
                 continue;
             }
-            ret = oar_audio_mediacodec_send_packet(oar, packet);
+            ret = oar->audio_mediacodec_ctx->oar_audio_mediacodec_send_packet(oar, packet);
             if(ret == 0){
                 freePacket(packet);
                 packet = NULL;
@@ -81,7 +81,7 @@ void * audio_decode_thread(void * data){
             break;
         }
     }
-    oar_audio_mediacodec_stop(oar);
+    oar->audio_mediacodec_ctx->oar_audio_mediacodec_stop(oar);
     (*oar->vm)->DetachCurrentThread(oar->vm);
     LOGI("thread ==> %s exit", __func__);
     return NULL;

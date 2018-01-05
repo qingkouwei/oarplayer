@@ -40,14 +40,18 @@ int oar_native_mediacodec_send_packet(void * codec,
                                       uint8_t *data);
 void oar_native_mediacodec_release_buffer(void * codec, int bufferID, bool render);
 int oar_native_mediacodec_receive_frame(void * codec,
-                                        void *(frameGenerate)(int64_t,ssize_t,int, int, int));
+                                        void** frame,
+                                        void *oar,
+                                        int type,
+                                        void *(frameGenerate)(void*,void**, void*, int, int64_t,ssize_t,int, int, int));
 void oar_native_mediacodec_flush(void * codec);
-void *oar_create_native_mediacodec_context(int codec_id,
+void *oar_create_native_mediacodec(int codec_id,
                                            int width, int height,
                                            int sample_rate, int channelCount,
-                                           uint8_t sps, int sps_size,
-                                           uint8_t pps, int pps_size,
-                                           void (*formatCreated(void*)));
+                                           uint8_t *sps, int sps_size,
+                                           uint8_t *pps, int pps_size,
+                                           void *ctx,
+                                           void (*formatCreated(void*, void*)));
 int oar_native_mediacodec_start(void * codec, void *format, void *window);
 void oar_native_mediacodec_stop(void * codec);
 void oar_native_mediacodec_release_context(void * codec, void *format);
