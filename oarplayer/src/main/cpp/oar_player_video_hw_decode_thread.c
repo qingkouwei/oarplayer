@@ -58,7 +58,7 @@ void* video_decode_hw_thread(void * data){
     oar->video_mediacodec_ctx->oar_video_mediacodec_start(oar);
     int ret;
     OARPacket * packet = NULL;
-    OARFrame * frame = (OARFrame*)malloc(sizeof(OARFrame));//TODO
+    OARFrame * frame = (OARFrame*)malloc(sizeof(OARFrame));
     while (oar->error_code == 0) {
         if(oar->just_audio){
             // 如果只播放音频  按照音视频同步的速度丢包
@@ -84,16 +84,13 @@ void* video_decode_hw_thread(void * data){
                     continue;
                 }
                 if(0 == oar->video_mediacodec_ctx->oar_video_mediacodec_send_packet(oar, packet)){
-                    _LOGD("send packet success...");
                     freePacket(packet);
                     packet = NULL;
                 }else{
                     // some device AMediacodec input buffer ids count < frame_queue->size
                     // when pause   frame_queue not full
                     // thread will not block in  "xl_frame_queue_put" function
-                    _LOGD("send packet failed:11111");
                     if(oar->status == PAUSED){
-                        _LOGD("send packet failed:2222222");
                         usleep(NULL_LOOP_SLEEP_US);
                     }
                 }
@@ -106,6 +103,7 @@ void* video_decode_hw_thread(void * data){
             }
         }
     }
+    drop_video_packet(oar);//Avoid srs read thread waiting cannot stopped.
     oar->video_mediacodec_ctx->oar_video_mediacodec_stop(oar);
     (*oar->vm)->DetachCurrentThread(oar->vm);
     LOGI("thread ==> %s exit", __func__);

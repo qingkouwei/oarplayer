@@ -28,7 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <malloc.h>
 #include <string.h>
 #include "oar_audio_mediacodec_ndk.h"
-#define isDebug 1
+#define isDebug 0
 #define _LOGD if(isDebug) LOGI
 static void formatCreate(void *ctx, void *format){
     oar_audio_mediacodec_context *context = (oar_audio_mediacodec_context*)ctx;

@@ -45,6 +45,9 @@ void * audio_decode_thread(void * data){
         if(oar->status == PAUSED){
             usleep(NULL_LOOP_SLEEP_US);
         }
+        if(oar->error_code != 0){
+            break;
+        }
 
         ret = oar->audio_mediacodec_ctx->oar_audio_mediacodec_receive_frame(oar, &frame);
         _LOGD("audio ret:%d",ret);
@@ -81,8 +84,13 @@ void * audio_decode_thread(void * data){
             break;
         }
     }
+    packet = oar_packet_queue_get(oar->audio_packet_queue);
+    if(packet != NULL){
+        freePacket(packet);
+        packet = NULL;//Avoid srs read thread waiting cannot stopped.
+    }
     oar->audio_mediacodec_ctx->oar_audio_mediacodec_stop(oar);
-    (*oar->vm)->DetachCurrentThread(oar->vm);
     LOGI("thread ==> %s exit", __func__);
+    (*oar->vm)->DetachCurrentThread(oar->vm);
     return NULL;
 }

@@ -27,7 +27,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include "oar_frame_queue.h"
 
-#define _LOGD if(isDebug) LOGD
+#define isDebug 0
+#define _LOGD if(isDebug) LOGI
 
 /*static OARFrame *newFrame(const uint8_t *data, int size, PktType_e type)
 {

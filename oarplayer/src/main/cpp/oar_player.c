@@ -43,7 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "oar_audio_mediacodec_ctx.h"
 #include "oar_video_mediacodec_ndk.h"
 
-#define isDebug 1
+#define isDebug 0
 #define _LOGD if(isDebug) LOGI
 
 static int stop(oarplayer *oar);
@@ -292,10 +292,6 @@ static int stop(oarplayer *oar) {
     if(oar->url){
         free(oar->url);
     }
-    if(oar->metadata){
-        oar->metadata->has_video = 0;
-        oar->metadata->has_audio = 0;
-    }
 
     // remove buffer call back
     oar->audio_packet_queue->empty_cb = NULL;
@@ -306,19 +302,27 @@ static int stop(oarplayer *oar) {
     clean_queues(oar);
     // 停止各个thread
     void *thread_res;
+    _LOGD("stop all threads...");
     pthread_join(oar->read_stream_thread, &thread_res);
     if (oar->metadata->has_video) {
         pthread_join(oar->video_decode_thread, &thread_res);
         oar->video_mediacodec_ctx->oar_video_mediacodec_release_context(oar);
+        free(oar->video_mediacodec_ctx);
+        oar->video_mediacodec_ctx = NULL;
         pthread_join(oar->gl_thread, &thread_res);
     }
 
     if (oar->metadata->has_audio) {
         pthread_join(oar->audio_decode_thread, &thread_res);
-        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context(oar->audio_mediacodec_ctx->ACodec);
+        oar->audio_mediacodec_ctx->oar_audio_mediacodec_release_context(oar);
+        free(oar->audio_mediacodec_ctx);
+        oar->audio_mediacodec_ctx = NULL;
         oar->audio_player_ctx->shutdown();
     }
-
+    if(oar->metadata){
+        oar->metadata->has_video = 0;
+        oar->metadata->has_audio = 0;
+    }
     clean_queues(oar);
     reset(oar);
     LOGI("player stoped");
@@ -366,12 +370,11 @@ int oar_player_release(oarplayer *oar){
     free(oar);
     return 0;
 }
-static int oar_player_resume(oarplayer *oar) {
+void oar_player_resume(oarplayer *oar) {
     oar->change_status(oar, PLAYING);
     if (oar->metadata->has_audio) {
         oar->audio_player_ctx->play(oar);
     }
-    return 0;
 }
 static void change_status(oarplayer *oar, PlayStatus status) {
     if (status == BUFFER_FULL) {

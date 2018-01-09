@@ -75,7 +75,7 @@ static void release_egl(oarplayer * oar) {
     oar_video_render_context *ctx = oar->video_render_ctx;
     if (ctx->display == EGL_NO_DISPLAY) return;
     glClear(GL_COLOR_BUFFER_BIT);
-    eglSwapBuffers(ctx->display, ctx->surface);
+    //eglSwapBuffers(ctx->display, ctx->surface);
     oar_texture_delete(oar);
     oar_glsl_program_clear_all();
     if(ctx->texture_window != NULL){
@@ -138,6 +138,9 @@ static inline void oar_player_release_video_frame(oarplayer *oar, OARFrame *fram
 }
 static inline void draw_now(oar_video_render_context *ctx) {
     oar_model *model = ctx->model;
+    if(!ctx->lock){
+        return;
+    }
     pthread_mutex_lock(ctx->lock);
     // The initialization is done
     if (model->pixel_format != PIX_FMT_NONE) {

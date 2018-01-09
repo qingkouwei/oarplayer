@@ -40,7 +40,6 @@ public class PlayerAty extends Activity {
             public void surfaceCreated(SurfaceHolder surfaceHolder) {
                 try {
                     String rtmp_url = getIntent().getStringExtra("rtmp_url");
-//                    rtmp_url = "rtmp://192.168.0.49/live/aaaaa";
                     player.setDataSource(rtmp_url);
                     playTimeHandler.sendEmptyMessageDelayed(1, 1000);
                 } catch (IOException e) {
@@ -71,11 +70,13 @@ public class PlayerAty extends Activity {
 
     @Override
     protected void onResume() {
+        player.onResume();
         super.onResume();
     }
 
     @Override
     protected void onPause() {
+        player.onPause();
         super.onPause();
     }
 

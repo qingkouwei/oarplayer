@@ -45,7 +45,7 @@ public class OARPlayer {
     private String mDataSource;
     private SurfaceHolder mSurfaceHolder;
 
-    private static volatile boolean mIsNativeInitialized = false;
+    private volatile boolean mIsNativeInitialized = false;
     private void initNativeOnce() {
         synchronized (OARPlayer.class) {
             if (!mIsNativeInitialized) {
@@ -117,6 +117,18 @@ public class OARPlayer {
         _setPlayBackground(playBackground);
     }
     private native void _setPlayBackground(boolean playBackground);
+
+    /**
+     * called in onPause of Activity
+     */
+    public void onPause() {
+        _onPause();
+    }
+    private native void _onPause();
+    public void onResume() {
+        _onResume();
+    }
+    private native void _onResume();
 
     /**
      * stop play

@@ -33,7 +33,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ERROR_SOCKET_READ                   1007
 #define ERROR_SOCKET_TIMEOUT                1011
 
-#define isDebug 0
+#define isDebug 1
 #define _LOGD if(isDebug) LOGE
 
 static int getSamplerate(int index){
@@ -243,9 +243,9 @@ void *read_thread(void *data) {
 //                        _LOGD("string...");
                     }else if(srs_amf0_is_object(amf0)){
 //                        _LOGD("object...");
-                        char* amf0_str = NULL;
+                        /*char* amf0_str = NULL;
                         srs_human_amf0_print(amf0, &amf0_str, NULL);
-                        _LOGD("nb_parsed_this:%d, str:%s", nb_parsed_this, amf0_str);
+                        _LOGD("nb_parsed_this:%d, str:%s", nb_parsed_this, amf0_str);*/
                         int count = srs_amf0_object_property_count(amf0);
 //                        _LOGD("count : %d", count);
                        int i = 0;
@@ -282,6 +282,7 @@ void *read_thread(void *data) {
 
         free(data);
     }
+    _LOGD("thread ==> %s exit", __func__);
     srs_rtmp_destroy(rtmp);
     return NULL;
 rtmp_destroy:

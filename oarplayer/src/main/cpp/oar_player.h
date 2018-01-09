@@ -32,6 +32,7 @@ oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int be
 void oar_player_set_buffer_time(oarplayer *oar, float buffer_time);
 void oar_player_set_play_background(oarplayer *oar, bool play_background);
 int oar_player_play(oarplayer *oar);
+void oar_player_resume(oarplayer *oar);
 int oar_player_stop(oarplayer *oar);
 int oar_player_release(oarplayer *oar);
 #endif //OARPLAYER_OAR_PLAYER_H

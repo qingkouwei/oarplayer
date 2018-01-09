@@ -102,6 +102,7 @@ SrsPlayer_stop(JNIEnv *env, jobject thiz)
 }
 static void
 SrsPlayer_release(JNIEnv *env, jobject thiz){
+    LOGI("release...");
     oar_player_release(oar);
     oar = NULL;
 }
@@ -118,11 +119,25 @@ SrsPlayer_getCurrentTime() {
 }
 static void
 SrsPlayer_setPlayBackground(jboolean playBackground){
+    LOGI("setPlayBackground...");
     oar_player_set_play_background(oar, playBackground);
 }
 static void
 SrsPlayer_setBufferTime(jfloat bufferTime){
     oar_player_set_buffer_time(oar, bufferTime);
+}
+static void
+SrsPlayer_onPause(){
+    LOGI("pause...");
+    if (oar && oar->status == PLAYING) {
+        oar->change_status(oar, PAUSED);
+    }
+}
+static void
+SrsPlayer_onResume(){
+    if(oar && oar->status == PAUSED){
+        oar_player_resume(oar);
+    }
 }
 static JNINativeMethod g_methods[] = {
         {
@@ -136,6 +151,8 @@ static JNINativeMethod g_methods[] = {
         { "_start",                 "()V",      (void *) SrsPlayer_start },
         { "_setPlayBackground",     "(Z)V",      (void *) SrsPlayer_setPlayBackground },
         { "_getCurrentTime",        "()F",      (void *) SrsPlayer_getCurrentTime },
+        { "_onPause",               "()V",      (void * ) SrsPlayer_onPause },
+        { "_onResume",               "()V",      (void * ) SrsPlayer_onResume },
         { "_stop",                  "()V",      (void *) SrsPlayer_stop },
         { "_release",               "()V",      (void *) SrsPlayer_release },
         { "native_init",            "(II)V",      (void *) SrsPlayer_native_init },
@@ -163,7 +180,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
 
 JNIEXPORT void JNI_OnUnload(JavaVM *jvm, void *reserved)
 {
-
+    LOGE("JNI_OnUnload....");
     pthread_mutex_destroy(&g_clazz.mutex);
 }
 
