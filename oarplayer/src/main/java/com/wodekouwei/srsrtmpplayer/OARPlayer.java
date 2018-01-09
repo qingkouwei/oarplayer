@@ -64,6 +64,14 @@ public class OARPlayer {
     }
     private native void native_init(int run_android_version, int best_samplerate);
 
+    /**
+     * setting rtmp url
+     * @param path
+     * @throws IOException
+     * @throws IllegalArgumentException
+     * @throws SecurityException
+     * @throws IllegalStateException
+     */
     public void setDataSource(String path)
             throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
         mDataSource = path;
@@ -72,39 +80,67 @@ public class OARPlayer {
     private native void _setDataSource(String path, String[] keys, String[] values)
             throws IOException, IllegalArgumentException, SecurityException, IllegalStateException;
 
+    /**
+     * unused
+     * @throws IllegalStateException
+     */
+    @SuppressWarnings("unused")
     public void prepareAsync() throws IllegalStateException {
         _prepareAsync();
     }
     private native void _prepareAsync() throws IllegalStateException;
 
+    /**
+     * setting reading packet buffer time
+     * @param time
+     */
     public void setBufferTime(float time){
         _setBufferTime(time);
     }
     private native void _setBufferTime(float time);
 
+    /**
+     * start play
+     * @throws IllegalStateException
+     */
     public void start() throws IllegalStateException {
         stayAwake(true);
         _start();
     }
     private native void _start() throws IllegalStateException;
 
+    /**
+     * setting playbackground(only play audio)
+     * @param playBackground
+     */
     public void setPlayBackground(boolean playBackground) {
         _setPlayBackground(playBackground);
     }
     private native void _setPlayBackground(boolean playBackground);
 
+    /**
+     * stop play
+     * @throws IllegalStateException
+     */
     public void stop() throws IllegalStateException {
         stayAwake(false);
         _stop();
     }
     private native void _stop() throws IllegalStateException;
 
+    /**
+     * release res
+     */
     public void release(){
         stayAwake(false);
         _release();
     }
     private native void _release();
 
+    /**
+     * setting render surface
+     * @param holder
+     */
     public void setSurface(SurfaceHolder holder){
         mSurfaceHolder = holder;
         _setVideoSurface(holder.getSurface());
@@ -115,6 +151,10 @@ public class OARPlayer {
      */
     private native void _setVideoSurface(Surface surface);
 
+    /**
+     * get current play time
+     * @return
+     */
     public float getCurrentTime(){
         return _getCurrentTime();
     }
@@ -168,7 +208,10 @@ public class OARPlayer {
         }
     }
 
-    @SuppressWarnings("unused")
+    /**
+     * callback by jni
+     * @param status
+     */
     void onPlayStatusChanged(int status) {
         if(isDebug) Log.i(TAG, "onPlayStatusChanged:" + status);
     }
