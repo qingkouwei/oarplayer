@@ -50,7 +50,7 @@ static int stop(oarplayer *oar);
 
 static void on_error(oarplayer *oar);
 
-static void change_status(oarplayer *pd, PlayStatus status);
+static void change_status(oarplayer *oar, PlayStatus status);
 
 static void on_decoder_configuration(oarplayer *oar);
 
@@ -86,9 +86,9 @@ static int message_callback(int fd, int events, void *data) {
     }
     return 1;
 }
-static void on_error_cb(oarplayer *pd, int error_code) {
-    pd->error_code = error_code;
-    pd->send_message(pd, oar_message_error);
+static void on_error_cb(oarplayer *oar, int error_code) {
+    oar->error_code = error_code;
+    oar->send_message(oar, oar_message_error);
 }
 
 static void buffer_empty_cb(void *data) {
@@ -119,19 +119,19 @@ static void reset(oarplayer *oar) {
     oar_video_render_ctx_reset(oar->video_render_ctx);
 }
 
-static inline void set_buffer_time(oarplayer *pd) {
-    float buffer_time_length = pd->buffer_time_length;
-    if (pd->metadata->has_audio) {
-        oar_queue_set_duration(pd->audio_packet_queue,buffer_time_length);
-        pd->audio_packet_queue->empty_cb = buffer_empty_cb;
-        pd->audio_packet_queue->full_cb = buffer_full_cb;
-        pd->audio_packet_queue->cb_data = pd;
+static inline void set_buffer_time(oarplayer *oar) {
+    float buffer_time_length = oar->buffer_time_length;
+    if (oar->metadata->has_audio) {
+        oar_queue_set_duration(oar->audio_packet_queue,buffer_time_length);
+        oar->audio_packet_queue->empty_cb = buffer_empty_cb;
+        oar->audio_packet_queue->full_cb = buffer_full_cb;
+        oar->audio_packet_queue->cb_data = oar;
     }
-    if (pd->metadata->has_video) {
-        oar_queue_set_duration(pd->video_packet_queue,buffer_time_length);
-        pd->video_packet_queue->empty_cb = buffer_empty_cb;
-        pd->video_packet_queue->full_cb = buffer_full_cb;
-        pd->video_packet_queue->cb_data = pd;
+    if (oar->metadata->has_video) {
+        oar_queue_set_duration(oar->video_packet_queue,buffer_time_length);
+        oar->video_packet_queue->empty_cb = buffer_empty_cb;
+        oar->video_packet_queue->full_cb = buffer_full_cb;
+        oar->video_packet_queue->cb_data = oar;
     }
 }
 
@@ -186,9 +186,7 @@ oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int be
 
     oar->run_android_version = run_android_version;
     oar->best_samplerate = best_samplerate;
-    oar->buffer_size_max = default_buffer_size;
     oar->buffer_time_length = default_buffer_time;
-    oar->read_timeout = default_read_timeout;
 
 
     oar->metadata = (oar_metadata_t*)malloc(sizeof(oar_metadata_t));
@@ -197,7 +195,7 @@ oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int be
     oar->metadata->video_extradata = NULL;
     oar->metadata->audio_pps = NULL;
 
-    if(run_android_version >= NDK_MEDIACODEC_VERSION){
+    if(oar->run_android_version >= NDK_MEDIACODEC_VERSION){
         _LOGD("create dl context");
         oar->dl_context = create_dl_context();
     }else{
@@ -233,8 +231,11 @@ void oar_player_set_buffer_time(oarplayer *oar, float buffer_time){
         set_buffer_time(oar);
     }
 }
-void oar_player_set_buffer_size(oarplayer *oar, int buffer_size){
-    oar->buffer_size_max = buffer_size;
+void oar_player_set_play_background(oarplayer *oar, bool play_background) {
+    if (oar->just_audio && oar->metadata->has_video) {
+        oar->video_mediacodec_ctx->oar_video_mediacodec_flush(oar);
+    }
+    oar->just_audio = play_background;
 }
 
 int oar_player_play(oarplayer *oar){
@@ -372,19 +373,19 @@ static int oar_player_resume(oarplayer *oar) {
     }
     return 0;
 }
-static void change_status(oarplayer *pd, PlayStatus status) {
+static void change_status(oarplayer *oar, PlayStatus status) {
     if (status == BUFFER_FULL) {
-        oar_player_resume(pd);
+        oar_player_resume(oar);
     } else {
-        pd->status = status;
+        oar->status = status;
     }
-    (*pd->jniEnv)->CallVoidMethod(pd->jniEnv, pd->oarPlayer, pd->jc->player_onPlayStatusChanged,
+    (*oar->jniEnv)->CallVoidMethod(oar->jniEnv, oar->oarPlayer, oar->jc->player_onPlayStatusChanged,
                                   status);
 }
 
-static void on_error(oarplayer *pd) {
-    (*pd->jniEnv)->CallVoidMethod(pd->jniEnv, pd->oarPlayer, pd->jc->player_onPlayError,
-                                  pd->error_code);
+static void on_error(oarplayer *oar) {
+    (*oar->jniEnv)->CallVoidMethod(oar->jniEnv, oar->oarPlayer, oar->jc->player_onPlayError,
+                                   oar->error_code);
 }
 static int hw_codec_init(oarplayer *oar) {
     oar->video_mediacodec_ctx = oar_create_video_mediacodec_context(oar);

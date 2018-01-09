@@ -30,7 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 oarplayer *
 oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int best_samplerate);
 void oar_player_set_buffer_time(oarplayer *oar, float buffer_time);
-void oar_player_set_buffer_size(oarplayer *oar, int buffer_size);
+void oar_player_set_play_background(oarplayer *oar, bool play_background);
 int oar_player_play(oarplayer *oar);
 int oar_player_stop(oarplayer *oar);
 int oar_player_release(oarplayer *oar);

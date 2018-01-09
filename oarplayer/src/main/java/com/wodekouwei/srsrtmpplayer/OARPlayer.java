@@ -64,25 +64,34 @@ public class OARPlayer {
     }
     private native void native_init(int run_android_version, int best_samplerate);
 
-    private native void _setDataSource(String path, String[] keys, String[] values)
-            throws IOException, IllegalArgumentException, SecurityException, IllegalStateException;
-
-    public native void _prepareAsync() throws IllegalStateException;
-    private native void _start() throws IllegalStateException;
-
     public void setDataSource(String path)
             throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
         mDataSource = path;
         _setDataSource(path, null, null);
     }
+    private native void _setDataSource(String path, String[] keys, String[] values)
+            throws IOException, IllegalArgumentException, SecurityException, IllegalStateException;
 
     public void prepareAsync() throws IllegalStateException {
         _prepareAsync();
     }
+    private native void _prepareAsync() throws IllegalStateException;
+
+    public void setBufferTime(float time){
+        _setBufferTime(time);
+    }
+    private native void _setBufferTime(float time);
+
     public void start() throws IllegalStateException {
         stayAwake(true);
         _start();
     }
+    private native void _start() throws IllegalStateException;
+
+    public void setPlayBackground(boolean playBackground) {
+        _setPlayBackground(playBackground);
+    }
+    private native void _setPlayBackground(boolean playBackground);
 
     public void stop() throws IllegalStateException {
         stayAwake(false);

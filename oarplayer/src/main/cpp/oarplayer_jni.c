@@ -116,6 +116,14 @@ SrsPlayer_getCurrentTime() {
     }
     return 0.0f;
 }
+static void
+SrsPlayer_setPlayBackground(jboolean playBackground){
+    oar_player_set_play_background(oar, playBackground);
+}
+static void
+SrsPlayer_setBufferTime(jfloat bufferTime){
+    oar_player_set_buffer_time(oar, bufferTime);
+}
 static JNINativeMethod g_methods[] = {
         {
                 "_setDataSource",
@@ -124,8 +132,10 @@ static JNINativeMethod g_methods[] = {
         },
         { "_setVideoSurface",       "(Landroid/view/Surface;)V", (void *) SrsPlayer_setVideoSurface },
         { "_prepareAsync",          "()V",      (void *) SrsPlayer_prepareAsync },
+        { "_setBufferTime",         "(F)V",     (void *)SrsPlayer_setBufferTime},
         { "_start",                 "()V",      (void *) SrsPlayer_start },
-        { "_getCurrentTime",                 "()F",      (void *) SrsPlayer_getCurrentTime },
+        { "_setPlayBackground",     "(Z)V",      (void *) SrsPlayer_setPlayBackground },
+        { "_getCurrentTime",        "()F",      (void *) SrsPlayer_getCurrentTime },
         { "_stop",                  "()V",      (void *) SrsPlayer_stop },
         { "_release",               "()V",      (void *) SrsPlayer_release },
         { "native_init",            "(II)V",      (void *) SrsPlayer_native_init },

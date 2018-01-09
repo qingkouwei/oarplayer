@@ -354,9 +354,7 @@ typedef struct oarplayer {
     oar_java_class *jc;
 
     //用户设置
-    int buffer_size_max;
     float buffer_time_length;
-    float read_timeout;
 
     char *url;
 

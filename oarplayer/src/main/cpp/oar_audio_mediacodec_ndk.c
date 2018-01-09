@@ -23,12 +23,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // Created by qingkouwei on 2018/1/4.
 //
-#define _JNILOG_TAG "oar_audio_mediacodec"
+#define _JNILOG_TAG "oar_audio_mediacodec_ndk"
 #include "_android.h"
 #include <malloc.h>
 #include <string.h>
 #include "oar_audio_mediacodec_ndk.h"
-
+#define isDebug 1
+#define _LOGD if(isDebug) LOGI
 static void formatCreate(void *ctx, void *format){
     oar_audio_mediacodec_context *context = (oar_audio_mediacodec_context*)ctx;
     context->AFormat = format;

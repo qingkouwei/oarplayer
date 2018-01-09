@@ -30,8 +30,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "oarplayer_type_def.h"
 #include "oar_packet_queue.h"
 
+#define ERROR_SOCKET_READ                   1007
+#define ERROR_SOCKET_TIMEOUT                1011
 
-#define _LOGD if(isDebug) LOGD
+#define isDebug 1
+#define _LOGD if(isDebug) LOGE
 
 void *read_thread(void *data) {
     _LOGD("read thread start...");
@@ -67,6 +70,11 @@ void *read_thread(void *data) {
         int ret = srs_rtmp_read_packet(rtmp, &type, &timestamp, &data, &size);
         if ( ret != 0) {
             LOGE("read packet error, ret : %d", ret);
+            if(ret == ERROR_SOCKET_TIMEOUT){
+                //read timeout
+            }else if(ret == ERROR_SOCKET_READ){
+                //read error
+            }
         }
         if(type == SRS_RTMP_TYPE_AUDIO){
             char audio_fromat_type = srs_utils_flv_audio_sound_format(data,size);//编码类型
@@ -74,35 +82,39 @@ void *read_thread(void *data) {
             char sampe_size = srs_utils_flv_audio_sound_size(data,size);//采样大小
             char audio_type = srs_utils_flv_audio_sound_type(data,size);//声道
             char audio_packet_type= srs_utils_flv_audio_aac_packet_type(data,size);
-            if(audio_fromat_type == 10 && audio_packet_type == 0){
-                _LOGD("audio pps:%d %d %d %d, sample_size = %d", data[0], data[1], data[2], data[3], sampe_size);
-                oar->metadata->audio_codec = audio_fromat_type;
-                oar->metadata->sample_format = sampe_size;
-                oar->metadata->sample_rate = 44100;// flv acc sample_rate is constant 3(44100)
-                oar->metadata->channels = audio_type == 1?2 : 1;
-                oar->metadata->audio_pps_size = 2;
-                if(oar->metadata->audio_pps){
-                    free(oar->metadata->audio_pps);
-                    oar->metadata->audio_pps = NULL;
-                }
-                oar->metadata->audio_pps = malloc(sizeof(char)*2);
-                memcpy(oar->metadata->audio_pps, data+2, 2);
-                oar->metadata->has_audio = 1;
-                if(oar->metadata->has_video){
-                    oar->send_message(oar, oar_message_decoder_configuration);
-                }
-            }else{
-                /*_LOGD("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+            if(audio_fromat_type == AUDIO_CODEC_AAC){
+                if( audio_packet_type == 0){
+                    _LOGD("audio pps:%d %d %d %d, sample_size = %d, audio_rate = %d", data[0], data[1], data[2], data[3], sampe_size,audio_rate);
+                    oar->metadata->audio_codec = audio_fromat_type;
+                    oar->metadata->sample_format = sampe_size;
+                    oar->metadata->sample_rate = 44100;// flv acc sample_rate is constant 3
+                    oar->metadata->channels = audio_type == 1?2 : 1;
+                    oar->metadata->audio_pps_size = 2;
+                    if(oar->metadata->audio_pps){
+                        free(oar->metadata->audio_pps);
+                        oar->metadata->audio_pps = NULL;
+                    }
+                    oar->metadata->audio_pps = malloc(sizeof(char)*2);
+                    memcpy(oar->metadata->audio_pps, data+2, 2);
+                    oar->metadata->has_audio = 1;
+                    if(oar->metadata->has_video){
+                        oar->send_message(oar, oar_message_decoder_configuration);
+                    }
+                }else{
+                    /*_LOGD("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
                      srs_human_flv_tag_type2string(type),type, timestamp,size,
                      data[0],data[1],data[2],data[3],
                      data[4],data[5],data[6],data[7],
                      data[8],data[9],data[10],data[11],
                      data[12],data[13],data[14],data[15]);*/
-                _LOGD("audio packet size:%d", oar->audio_packet_queue->count);
-                char *audio = (char*)malloc(sizeof(char) *(size - 2));
-                memcpy(audio, data+2, size - 2);
-                oar_packet_queue_put(oar->audio_packet_queue, size-2,PktType_Audio, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, 0, audio);
-                free(audio);
+//                    _LOGD("audio packet size:%d", oar->audio_packet_queue->count);
+                    char *audio = (char*)malloc(sizeof(char) *(size - 2));
+                    memcpy(audio, data+2, size - 2);
+                    oar_packet_queue_put(oar->audio_packet_queue, size-2,PktType_Audio, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, 0, audio);
+                    free(audio);
+                }
+            }else{
+                oar->on_error(oar, OAR_ERROR_FORMAT_AUDIO_CODEC);
             }
             //_LOGD("audio format:%d, rate:%d, sample size:%d, type:%d, pakcet type:%d",
                  //audio_fromat_type, audio_rate, sampe_size,audio_type, audio_packet_type);
@@ -110,63 +122,66 @@ void *read_thread(void *data) {
             char video_codec_id = srs_utils_flv_video_codec_id(data, size);
             char isKeyFrame = srs_utils_flv_video_frame_type(data,size);
             char video_packet_type = srs_utils_flv_video_avc_packet_type(data,size);
+            if(video_codec_id == VIDEO_CODEC_AVC){
+                if(video_packet_type == 0){
+                    oar->metadata->video_codec = video_codec_id;
+                    /*int sps_size = (*(data + 11)<<8) | *(data+12);
+                    oar->metadata->video_sps = malloc(sizeof(char) * sps_size);
+                    memcpy(oar->metadata->video_sps, data+13, sps_size);
+                    oar->metadata->video_sps_size = sps_size;
 
-            if(video_codec_id == 7 && video_packet_type == 0){
-                oar->metadata->video_codec = video_codec_id;
-                /*int sps_size = (*(data + 11)<<8) | *(data+12);
-                oar->metadata->video_sps = malloc(sizeof(char) * sps_size);
-                memcpy(oar->metadata->video_sps, data+13, sps_size);
-                oar->metadata->video_sps_size = sps_size;
+                    int pps_size = (*(data+12+sps_size + 2)<<8) | *(data+12+sps_size + 3);
+                    oar->metadata->video_pps = malloc(sizeof(char) * pps_size);
+                    memcpy(oar->metadata->video_pps, data+12+sps_size + 4, pps_size);
+                    oar->metadata->video_pps_size = pps_size;*/
+                    if(oar->metadata->video_extradata != NULL){
+                        free(oar->metadata->video_extradata);
+                        oar->metadata->video_extradata = NULL;
+                    }
+                    oar->metadata->video_extradata = malloc(sizeof(char) * (size-5));
+                    memcpy(oar->metadata->video_extradata, data+5, size-5);
+                    oar->metadata->video_extradata_size = size -5;
 
-                int pps_size = (*(data+12+sps_size + 2)<<8) | *(data+12+sps_size + 3);
-                oar->metadata->video_pps = malloc(sizeof(char) * pps_size);
-                memcpy(oar->metadata->video_pps, data+12+sps_size + 4, pps_size);
-                oar->metadata->video_pps_size = pps_size;*/
-                if(oar->metadata->video_extradata != NULL){
-                    free(oar->metadata->video_extradata);
-                    oar->metadata->video_extradata = NULL;
+                    oar->metadata->has_video = 1;
+                    if(oar->metadata->has_audio){
+                        oar->send_message(oar, oar_message_decoder_configuration);
+                    }
+                    //_LOGD("total size : %d, SPS size :%d, pps size : %d", size,0, 0);
+
+                    //23 0 0 0 0
+                    // 1(分隔符)
+                    // 77 64 31(sps[1],sps[2],sps[3]
+                    // 255 225
+                    // 0 27 (sps size)
+                    // 107 77 64 31 232 128 40 2 221 127 181 1 1 1 64 0 0 250 64 0 58 152 3 198 12 68 128 (sps)
+                    // 1(分隔符)
+                    // 0 4 104 235 239 32 (pps size)
+                    /*_LOGE("video sps:%d, %d %d %d %d, %d, %d %d %d,%0x %0x, sps size = %d %d ,%d %d %d %d %d %d %d, pps size = %d %d %d",
+                         data[0], data[1],data[2],data[3],data[4],
+                         data[5],
+                         data[6],data[7],data[8],
+                         data[9],data[10],
+                         data[11],data[12],
+                         data[13],data[14],data[15],data[16],data[17],data[18],data[19],
+                         data[13+data[12]],data[14+data[12]], data[15+data[12]]);*/
+
+
+                }else{
+                    /*_LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                         srs_human_flv_tag_type2string(type),type, timestamp,size,
+                         data[0],data[1],data[2],data[3],
+                         data[4],data[5],data[6],data[7],
+                         data[8],data[9],data[10],data[11],
+                         data[12],data[13],data[14],data[15]);*/
+                    char *video = (char*)malloc(sizeof(char) *(size - 5));
+                    memcpy(video, data+5, size - 5);
+                    oar_packet_queue_put(oar->video_packet_queue, size-5,PktType_Video, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, isKeyFrame, video);
+                    free(video);
                 }
-                oar->metadata->video_extradata = malloc(sizeof(char) * (size-5));
-                memcpy(oar->metadata->video_extradata, data+5, size-5);
-                oar->metadata->video_extradata_size = size -5;
-
-                oar->metadata->has_video = 1;
-                if(oar->metadata->has_audio){
-                    oar->send_message(oar, oar_message_decoder_configuration);
-                }
-                _LOGD("total size : %d, SPS size :%d, pps size : %d", size,0, 0);
-
-                //23 0 0 0 0
-                // 1(分隔符)
-                // 77 64 31(sps[1],sps[2],sps[3]
-                // 255 225
-                // 0 27 (sps size)
-                // 107 77 64 31 232 128 40 2 221 127 181 1 1 1 64 0 0 250 64 0 58 152 3 198 12 68 128 (sps)
-                // 1(分隔符)
-                // 0 4 104 235 239 32 (pps size)
-                /*_LOGE("video sps:%d, %d %d %d %d, %d, %d %d %d,%0x %0x, sps size = %d %d ,%d %d %d %d %d %d %d, pps size = %d %d %d",
-                     data[0], data[1],data[2],data[3],data[4],
-                     data[5],
-                     data[6],data[7],data[8],
-                     data[9],data[10],
-                     data[11],data[12],
-                     data[13],data[14],data[15],data[16],data[17],data[18],data[19],
-                     data[13+data[12]],data[14+data[12]], data[15+data[12]]);*/
-
-
-            }else{
-                /*_LOGI("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-                     srs_human_flv_tag_type2string(type),type, timestamp,size,
-                     data[0],data[1],data[2],data[3],
-                     data[4],data[5],data[6],data[7],
-                     data[8],data[9],data[10],data[11],
-                     data[12],data[13],data[14],data[15]);*/
-                char *video = (char*)malloc(sizeof(char) *(size - 5));
-                memcpy(video, data+5, size - 5);
-                oar_packet_queue_put(oar->video_packet_queue, size-5,PktType_Video, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, isKeyFrame, video);
-                free(video);
-            }
 //            _LOGD("video codec_id:%d, isKeyFrame:%d, packet_type:%d", video_codec_id, isKeyFrame, video_packet_type);
+            }else{
+                oar->on_error(oar, OAR_ERROR_FORMAT_VIDEO_CODEC);
+            }
 
         }else if(type == SRS_RTMP_TYPE_SCRIPT){
             if (srs_rtmp_is_onMetaData(type, data, size)) {
@@ -181,9 +196,9 @@ void *read_thread(void *data) {
 //                        _LOGD("string...");
                     }else if(srs_amf0_is_object(amf0)){
 //                        _LOGD("object...");
-                        /*char* amf0_str = NULL;
+                        char* amf0_str = NULL;
                         srs_human_amf0_print(amf0, &amf0_str, NULL);
-                        _LOGD("nb_parsed_this:%d, str:%s", nb_parsed_this, amf0_str);*/
+                        _LOGD("nb_parsed_this:%d, str:%s", nb_parsed_this, amf0_str);
                         int count = srs_amf0_object_property_count(amf0);
 //                        _LOGD("count : %d", count);
                        int i = 0;
@@ -201,7 +216,7 @@ void *read_thread(void *data) {
                             }else if(strcmp(oar_metadata_audio_rate, key)==0){
                                 oar->metadata->audio_bitrate =  srs_amf0_to_number(value);
                             }
-                            //_LOGD("index is :%d,key is %s", i, key);
+//                            _LOGD("index is :%d,key is %s", i, key);
                             if(key){
                                 free((void*)key);
                                 key = NULL;
@@ -216,7 +231,7 @@ void *read_thread(void *data) {
             }
         }
 
-        _LOGD("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d", srs_human_flv_tag_type2string(type),type, timestamp,size,data[0],data[1],data[2],data[3]);
+        //_LOGD("type: %s(%d); timestamp: %u; size: %d, data:%d %d %d %d", srs_human_flv_tag_type2string(type),type, timestamp,size,data[0],data[1],data[2],data[3]);
 
         free(data);
     }
