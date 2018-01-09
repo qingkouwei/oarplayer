@@ -33,8 +33,41 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ERROR_SOCKET_READ                   1007
 #define ERROR_SOCKET_TIMEOUT                1011
 
-#define isDebug 1
+#define isDebug 0
 #define _LOGD if(isDebug) LOGE
+
+static int getSamplerate(int index){
+    switch(index){
+        case 0:
+            return 96000;
+        case 1:
+            return 88200;
+        case 2:
+            return 64000;;
+        case 3:
+            return 48000;
+        case 4:
+            return 44100;;
+        case 5:
+            return 32000;
+        case 6:
+            return 24000;
+        case 7:
+            return 22050;
+        case 8:
+            return 16000;
+        case 9:
+            return 12000;
+        case 10:
+            return 11025;
+        case 11:
+            return 8000;
+        case 12:
+            return 7350;
+        default:
+            return -1;
+    }
+}
 
 void *read_thread(void *data) {
     _LOGD("read thread start...");
@@ -85,10 +118,24 @@ void *read_thread(void *data) {
             if(audio_fromat_type == AUDIO_CODEC_AAC){
                 if( audio_packet_type == 0){
                     _LOGD("audio pps:%d %d %d %d, sample_size = %d, audio_rate = %d", data[0], data[1], data[2], data[3], sampe_size,audio_rate);
+                    uint8_t profile = data[2]>>3;
+                    uint8_t sample_index = ((data[2] & 0x07) << 1) | ((data[3] & 0x80)>>7);
+                    uint8_t channel_count = (data[3] & 0x78) >> 3;
+                    _LOGD("profile:%d, channel_count:%d, sample_index:%d", profile, channel_count, sample_index);
                     oar->metadata->audio_codec = audio_fromat_type;
                     oar->metadata->sample_format = sampe_size;
-                    oar->metadata->sample_rate = 44100;// flv acc sample_rate is constant 3
-                    oar->metadata->channels = audio_type == 1?2 : 1;
+                    int sample_rate = getSamplerate(sample_index);
+                    if(sample_rate == -1){
+                        oar->on_error(oar, OAR_ERROR_FORMAT_AUDIO_CONFIG);
+                        free(data);
+                        goto rtmp_destroy;
+                    }
+                    if(profile == 5 | profile == 6){
+                        oar->metadata->sample_rate = sample_rate * 2;
+                    }else{
+                        oar->metadata->sample_rate = sample_rate;
+                    }
+                    oar->metadata->channels = channel_count > 2?2 : channel_count;//Android openSL ES   can not support more than 2 channels.
                     oar->metadata->audio_pps_size = 2;
                     if(oar->metadata->audio_pps){
                         free(oar->metadata->audio_pps);

@@ -146,7 +146,7 @@ public class OARPlayer {
         _setVideoSurface(holder.getSurface());
     }
     /*
-     * Update the IjkMediaPlayer SurfaceTexture. Call after setting a new
+     * Update the SurfaceTexture. Call after setting a new
      * display surface.
      */
     private native void _setVideoSurface(Surface surface);
