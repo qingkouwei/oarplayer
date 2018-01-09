@@ -43,7 +43,7 @@ int oar_native_mediacodec_receive_frame(void * codec,
                                         void **frame,
                                         void * oar,
                                         int type,
-                                        void *(frameGenerate)(void*,void *,void**, int,int64_t,ssize_t,int, int, int));
+                                        void *(frameGenerate)(void*,void **,void*, int,int64_t,ssize_t,int, int, int));
 void oar_native_mediacodec_flush(void * codec);
 void *oar_create_native_mediacodec(int codec_id,
                                            int width, int height,

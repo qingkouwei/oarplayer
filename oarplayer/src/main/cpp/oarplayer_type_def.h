@@ -304,7 +304,7 @@ typedef struct oar_video_mediacodec_context {
     void *AFormat;
     void *ACodec;
     void (*oar_video_mediacodec_release_buffer)(struct oarplayer *oar, int index);
-    int (*oar_video_mediacodec_receive_frame)(struct oarplayer *oar, OARFrame **frame);
+    int (*oar_video_mediacodec_receive_frame)(struct oarplayer *oar, OARFrame *frame);
     int (*oar_video_mediacodec_send_packet)(struct oarplayer *oar, OARPacket *packet);
     void (*oar_video_mediacodec_flush)(struct oarplayer *oar);
     void (*oar_video_mediacodec_release_context)(struct oarplayer *oar);

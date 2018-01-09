@@ -79,7 +79,7 @@ int oar_native_mediacodec_receive_frame(void * codec,
                                         void **frame,
                                         void *oar,
                                         int type,
-                                       void *(frameGenerate)(void *,void *, void**, int, int64_t,ssize_t,int, int, int)) {
+                                       void *(frameGenerate)(void *,void **, void*, int, int64_t,ssize_t,int, int, int)) {
     AMediaCodec *c = (AMediaCodec *)codec;
     AMediaCodecBufferInfo info;
     int output_ret = 1;

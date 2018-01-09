@@ -66,7 +66,7 @@ void oar_video_mediacodec_release_buffer_ndk(oarplayer *oar, int index){
 static void frameGenerate(void* player, void **frame, void *data, int size, int64_t pts,ssize_t index,int arg1, int arg2, int pix_format){
     oarplayer *oar = (oarplayer*)player;
     if (index >= 0) {
-        OARFrame *f = (OARFrame *)frame;
+        OARFrame *f = (OARFrame *)(*frame);
         f->type = PktType_Video;
         f->pts = pts;
         f->format = PIX_FMT_EGL_EXT;
@@ -94,9 +94,9 @@ static void frameGenerate(void* player, void **frame, void *data, int size, int6
         }
     }
 }
-int oar_video_mediacodec_receive_frame_ndk(oarplayer *oar, OARFrame **frame){
+int oar_video_mediacodec_receive_frame_ndk(oarplayer *oar, OARFrame *frame){
     return oar->dl_context->native_mediacodec_receive_frame(oar->video_mediacodec_ctx->ACodec,
-                                                            frame, oar, 0, frameGenerate);
+                                                            &frame, oar, 0, frameGenerate);
 }
 int oar_video_mediacodec_send_packet_ndk(oarplayer *oar, OARPacket *packet){
     if (packet == NULL) { return -2; }

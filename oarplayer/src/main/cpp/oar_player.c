@@ -140,7 +140,7 @@ static oar_dl_context *create_dl_context()
     oar_dl_context *dl_context = (oar_dl_context *)malloc(sizeof(oar_dl_context));
     dl_context->libHandler = dlopen("./libmediacodec-lib.so", RTLD_NOW);
     if (!dl_context->libHandler) {
-        LOGE("!!!!!!!! failed to load library: %s");
+        LOGE("!!!!!!!! failed to load library");
         return NULL;
     }
 

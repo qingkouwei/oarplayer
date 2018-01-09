@@ -29,7 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 void oar_create_video_mediacodec_ndk(
         oarplayer *oar);
 void oar_video_mediacodec_release_buffer_ndk(oarplayer *oar, int index);
-int oar_video_mediacodec_receive_frame_ndk(oarplayer *oar, OARFrame **frame);
+int oar_video_mediacodec_receive_frame_ndk(oarplayer *oar, OARFrame *frame);
 int oar_video_mediacodec_send_packet_ndk(oarplayer *oar, OARPacket *packet);
 void oar_video_mediacodec_flush_ndk(oarplayer *oar);
 void oar_video_mediacodec_release_context_ndk(oarplayer *oar);
