@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package com.wodekouwei.srsrtmpplayer;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.util.Log;
@@ -45,17 +46,26 @@ public class OARPlayer {
     private String mDataSource;
     private SurfaceHolder mSurfaceHolder;
 
+    private Context context;
+
     private volatile boolean mIsNativeInitialized = false;
     private void initNativeOnce() {
+        int bestrate = 44100;
+        if (android.os.Build.VERSION.SDK_INT >= 17) {
+            AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            String rate = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE);
+            bestrate = Integer.parseInt(rate);
+        }
         synchronized (OARPlayer.class) {
             if (!mIsNativeInitialized) {
-                native_init(Build.VERSION.SDK_INT, 44100);
+                native_init(Build.VERSION.SDK_INT, bestrate);
                 mIsNativeInitialized = true;
             }
         }
     }
 
-    public OARPlayer() {
+    public OARPlayer(Context context) {
+        this.context = context;
         initPlayer();
     }
     private void initPlayer() {
