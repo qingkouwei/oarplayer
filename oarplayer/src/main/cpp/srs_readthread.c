@@ -130,7 +130,7 @@ void *read_thread(void *data) {
                         free(data);
                         goto rtmp_destroy;
                     }
-                    if(profile == 5 | profile == 6){
+                    if(profile == 5 || profile == 29){
                         oar->metadata->sample_rate = sample_rate * 2;
                     }else{
                         oar->metadata->sample_rate = sample_rate;
@@ -155,10 +155,7 @@ void *read_thread(void *data) {
                      data[8],data[9],data[10],data[11],
                      data[12],data[13],data[14],data[15]);*/
 //                    _LOGD("audio packet size:%d", oar->audio_packet_queue->count);
-                    char *audio = (char*)malloc(sizeof(char) *(size - 2));
-                    memcpy(audio, data+2, size - 2);
-                    oar_packet_queue_put(oar->audio_packet_queue, size-2,PktType_Audio, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, 0, audio);
-                    free(audio);
+                    oar_packet_queue_put(oar->audio_packet_queue, size-2,PktType_Audio, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, 0, data+2);
                 }
             }else{
                 oar->on_error(oar, OAR_ERROR_FORMAT_AUDIO_CODEC);
@@ -220,10 +217,7 @@ void *read_thread(void *data) {
                          data[4],data[5],data[6],data[7],
                          data[8],data[9],data[10],data[11],
                          data[12],data[13],data[14],data[15]);*/
-                    char *video = (char*)malloc(sizeof(char) *(size - 5));
-                    memcpy(video, data+5, size - 5);
-                    oar_packet_queue_put(oar->video_packet_queue, size-5,PktType_Video, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, isKeyFrame, video);
-                    free(video);
+                    oar_packet_queue_put(oar->video_packet_queue, size-5,PktType_Video, timestamp*USEC_PRE_MSEC, timestamp*USEC_PRE_MSEC, isKeyFrame, data+5);
                 }
 //            _LOGD("video codec_id:%d, isKeyFrame:%d, packet_type:%d", video_codec_id, isKeyFrame, video_packet_type);
             }else{

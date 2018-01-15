@@ -32,7 +32,7 @@ public class PlayerAty extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         setContentView(R.layout.activity_player);
-        player = new OARPlayer();
+        player = new OARPlayer(this);
         surfaceView = (SurfaceView)findViewById(R.id.surfaceview);
         playTime = (TextView)findViewById(R.id.playTime);
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {

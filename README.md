@@ -33,3 +33,5 @@ oarplayer(only android rtmp player)是一款简单到毫无特色的纯rtmp播�
 6. 释放资源:`player.release();`
 ## 联系方式
 email:turn.shen@gmail.com
+
+**欢迎使用,欢迎star**
