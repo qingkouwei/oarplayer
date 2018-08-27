@@ -138,9 +138,11 @@ static inline void set_buffer_time(oarplayer *oar) {
 static oar_dl_context *create_dl_context()
 {
     oar_dl_context *dl_context = (oar_dl_context *)malloc(sizeof(oar_dl_context));
-    dl_context->libHandler = dlopen("./libmediacodec-lib.so", RTLD_NOW);
+    dl_context->libHandler = dlopen("libmediacodec-lib.so", RTLD_NOW);
     if (!dl_context->libHandler) {
         LOGE("!!!!!!!! failed to load library");
+        char *error = dlerror();
+        LOGE("error : %s", error);
         return NULL;
     }
 
