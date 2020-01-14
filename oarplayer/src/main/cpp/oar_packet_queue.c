@@ -54,8 +54,9 @@ void freePacket(OARPacket *pkt)
     }
 }
 
-oar_packet_queue * oar_queue_create(){
-    oar_packet_queue *queue = (oar_packet_queue*)malloc(sizeof(oar_packet_queue));
+oar_packet_queue *oar_queue_create(PktType_e media_type) {
+    oar_packet_queue *queue = (oar_packet_queue *) malloc(sizeof(oar_packet_queue));
+    queue->media_type = media_type;
     queue->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
     queue->cond = (pthread_cond_t *) malloc(sizeof(pthread_cond_t));
     pthread_mutex_init(queue->mutex, NULL);
@@ -80,7 +81,7 @@ void oar_packet_queue_free(oar_packet_queue *queue){
     while(packet){
         tempPacket = packet;
         packet = packet->next;
-        free(tempPacket);
+        freePacket(tempPacket);
     }
     queue->cachedPackets = NULL;
     queue->lastPacket = NULL;

@@ -244,6 +244,7 @@ typedef struct OARPacket {
     uint8_t data[0];
 }OARPacket;
 typedef struct oar_packet_queue {
+    PktType_e media_type;
     pthread_mutex_t *mutex;
     pthread_cond_t *cond;
     OARPacket *cachedPackets;//队列首地址

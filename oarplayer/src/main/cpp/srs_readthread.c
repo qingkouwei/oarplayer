@@ -258,10 +258,6 @@ void *read_thread(void *data) {
                                 oar->metadata->audio_bitrate =  srs_amf0_to_number(value);
                             }
 //                            _LOGD("index is :%d,key is %s", i, key);
-                            if(key){
-                                free((void*)key);
-                                key = NULL;
-                            }
 
                         }
                     }

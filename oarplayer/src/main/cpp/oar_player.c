@@ -204,8 +204,8 @@ oar_player_create(JNIEnv *env, jobject instance, int run_android_version, int be
         oar->dl_context = NULL;
     }
 
-    oar->audio_packet_queue = oar_queue_create();
-    oar->video_packet_queue = oar_queue_create();
+    oar->audio_packet_queue = oar_queue_create(PktType_Audio);
+    oar->video_packet_queue = oar_queue_create(PktType_Video);
     oar->video_frame_queue = oar_frame_queue_create(20);
     oar->audio_frame_queue = oar_frame_queue_create(20);
     oar->audio_clock = oar_clock_create();
