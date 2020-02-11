@@ -30,6 +30,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "oarplayer_type_def.h"
 #include "oar_packet_queue.h"
 
+#define SRS_READ_TIMEOUT                    500
+#define SRS_WRITE_TIMEOUT                   500
 #define ERROR_SOCKET_READ                   1007
 #define ERROR_SOCKET_TIMEOUT                1011
 
@@ -78,7 +80,11 @@ void *read_thread(void *data) {
         LOGE("create srs rtmp failed.");
     }
     _LOGD("srs_rtmp_create success, url is : %s", oar->url);
-    int ret = srs_rtmp_handshake(rtmp);
+    int ret = srs_rtmp_set_timeout(rtmp, SRS_READ_TIMEOUT, SRS_WRITE_TIMEOUT);
+    if(ret != 0){
+        LOGE("srs_rtmp_set_timeout failed:%d",ret);
+    }
+    ret = srs_rtmp_handshake(rtmp);
     if(ret != 0){
         LOGE("simple handshake failed:%d",ret);
         goto rtmp_destroy;
