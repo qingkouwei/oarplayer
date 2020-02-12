@@ -37,3 +37,19 @@ target_link_libraries( # Specifies the target library.
                    ${log-lib}
                    ${media-ndk}
                    )
+
+set(distribution_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../oarplayer/jni_lib_src)
+
+set_target_properties(mediacodec-lib PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${distribution_DIR}/libs/${ANDROID_ABI})
+target_include_directories(mediacodec-lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp)
+
+
+add_custom_command(TARGET mediacodec-lib POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E
+        copy "${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/oar_native_mediacodec.h"
+        "${distribution_DIR}/include/"
+        #                   **** the following 2 lines are for potential future debug purpose ****
+        #                   COMMAND "${CMAKE_COMMAND}" -E
+        #                   remove_directory "${CMAKE_CURRENT_BINARY_DIR}"
+        COMMENT "Copying gmath to output directory")

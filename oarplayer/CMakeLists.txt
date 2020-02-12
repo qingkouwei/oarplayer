@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-set(lib_src_DIR ${CMAKE_SOURCE_DIR}/jni_lib_src/${ANDROID_ABI})
+set(lib_src_DIR ${CMAKE_SOURCE_DIR}/jni_lib_src/libs/${ANDROID_ABI})
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")

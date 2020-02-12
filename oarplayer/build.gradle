@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
     sourceSets {
         main {
-            jniLibs.srcDirs = ['jni_lib_src']
+            jniLibs.srcDirs = ['jni_lib_src/libs']
         }
     }
 
@@ -14,9 +14,6 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-        ndk {
-            abiFilters 'armeabi-v7a'
-        }
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
