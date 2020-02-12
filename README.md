@@ -23,6 +23,10 @@ oarplayer(only android rtmp player)是一款简单到毫无特色的纯rtmp播�
 
 
 ## 使用说明
+gradle中导入:
+```
+compile 'com.github.qingkouwei:oarplayer:0.0.1-SNAPSHOT'
+```
 通过以下几步即可完成rtmp播放:
 
 1. 实例化OARPlayer:`OARPlayer player = new OARPlayer();`
@@ -34,4 +38,5 @@ oarplayer(only android rtmp player)是一款简单到毫无特色的纯rtmp播�
 ## 联系方式
 email:turn.shen@gmail.com
 
+OARPlayer is licenced under [MIT](https://github.com/qingkouwei/oarplayer/blob/master/LICENSE).
 **欢迎使用,欢迎star**
